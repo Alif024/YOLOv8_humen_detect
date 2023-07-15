@@ -63,6 +63,7 @@ void State2() {
     digitalWrite(ventilationFan, LOW);
     state1 = true;
     state2 = false;
+    LINE.notify("ห้องว่างแล้ว");
   }
   detectMillis = millis();
   uint8_t detectState = digitalRead(detectPin);
@@ -72,6 +73,7 @@ void State2() {
     state2 = false;
     state3 = true;
     timeDetectCount = true;
+    LINE.notify("คนเข้ามาใช้ห้องเรียนแล้ว");
   }
 
   if (detectState == 1 && detectStatePrevious == LOW) {
@@ -141,6 +143,7 @@ void State4() {
     digitalWrite(airControl, LOW);
     state1 = true;
     state4 = false;
+    LINE.notify("ห้องว่างแล้ว");
   }
   if (detectState == 0 && detectStatePrevious == HIGH) {
     detectStatePrevious = LOW;
@@ -171,6 +174,7 @@ void State5() {
     digitalWrite(ventilationFan, LOW);
     state1 = true;
     state5 = false;
+    LINE.notify("ห้องว่างแล้ว");
   }
   if (detectState == 0 && detectStatePrevious == HIGH) {
     detectStatePrevious = LOW;
@@ -181,6 +185,7 @@ void State5() {
     state2 = true;
     state5 = false;
     timeScheduleCount = true;
+    LINE.notify("คนมาใช้ห้องต่อจากคาบที่แล้ว");
   }
 }
 
