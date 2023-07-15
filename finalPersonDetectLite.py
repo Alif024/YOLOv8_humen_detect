@@ -27,11 +27,11 @@ def task1():
     
     while True:
         ret, frame = cap.read()
-        results = model.predict(frame, conf=0.6)[0]
+        results = model.predict(frame, conf=0.25, classes=[0])[0]
         if time() - startTime >= 3:
-            resultsOutput = results.boxes.cls.to('cpu').numpy().tolist()
-            print("number of person : ", resultsOutput.count(0))
-            if resultsOutput.count(0) >= 5:
+            resultsOutput = results.boxes.cls.to('cpu').numpy()
+            print("number of person : ", len(resultsOutput))
+            if len(resultsOutput) >= 3:
                 #print('fine')
                 GPIO.output(detectPin, 1)
             else:
