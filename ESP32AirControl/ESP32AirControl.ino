@@ -45,6 +45,7 @@ void State1() {
     state1 = false;
     state2 = true;
     timeScheduleCount = true;
+    LINE.notify("ห้องว่างแล้ว");
   }
 }
 
@@ -63,7 +64,6 @@ void State2() {
     digitalWrite(ventilationFan, LOW);
     state1 = true;
     state2 = false;
-    LINE.notify("ห้องว่างแล้ว");
   }
   detectMillis = millis();
   uint8_t detectState = digitalRead(detectPin);
