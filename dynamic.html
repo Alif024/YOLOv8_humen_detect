@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>ESP32 Device Status</title>
+    <script>
+        // Function to update the device statuses
+        function updateDeviceStatus() {
+            fetch("/status")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("persons").innerHTML = data.persons;
+                    document.getElementById("air-conditioner").innerHTML = data.air_conditioner;
+                    document.getElementById("electric-wall-fan").innerHTML = data.electric_wall_fan;
+                    document.getElementById("ventilation-fan").innerHTML = data.ventilation_fan;
+                });
+        }
+
+        // Periodically update the device statuses every 2 seconds
+        setInterval(updateDeviceStatus, 2000);
+    </script>
+</head>
+
+<body>
+    <h1>ESP32 Device Status</h1>
+    <p>Persons: <span id="persons">Loading...</span></p>
+    <p>Air Conditioner: <span id="air-conditioner">Loading...</span></p>
+    <p>Electric Wall Fan: <span id="electric-wall-fan">Loading...</span></p>
+    <p>Ventilation Fan: <span id="ventilation-fan">Loading...</span></p>
+</body>
+
+</html>
