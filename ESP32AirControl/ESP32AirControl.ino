@@ -1,9 +1,9 @@
-const int personPin = 0;
-const int schedulePin = 1;
-const int finishSchedulePin = 2;
-const int electricWallFanPin = 4;
-const int airConditionerPin = 5;
-const int ventilationFanPin = 6;
+const int schedulePin = 25;
+const int finishSchedulePin = 26;
+const int personsPin = 13;
+const int airConditionerPin = 12;
+const int electricWallFanPin = 14;
+const int ventilationFanPin = 27;
 
 /* state_status */
 bool state1 = true;
@@ -17,7 +17,7 @@ unsigned long classTime;
 bool classTimeState = true;
 
 void setup() {
-  pinMode(personPin, INPUT_PULLUP);
+  pinMode(personsPin, INPUT_PULLUP);
   pinMode(schedulePin, INPUT_PULLUP);
   pinMode(finishSchedulePin, INPUT_PULLUP);
   pinMode(electricWallFanPin, OUTPUT);
@@ -52,7 +52,7 @@ void taskState2() {
     } else {
       while (true) {
         detectMillis = millis();
-        uint8_t detectState = digitalRead(personPin);
+        uint8_t detectState = digitalRead(personsPin);
         if (detectState == HIGH && detectStatePrevious == LOW) {
           detectLongMillis = detectMillis;
           detectStatePrevious = HIGH;
@@ -112,7 +112,7 @@ void taskState3() {
     } else {
       while (true) {
         detectMillis = millis();
-        uint8_t detectState = digitalRead(personPin);
+        uint8_t detectState = digitalRead(personsPin);
         if (detectState == HIGH && detectStatePrevious == LOW) {
           detectLongMillis = detectMillis;
           detectStatePrevious = HIGH;
@@ -143,7 +143,7 @@ void taskState4() {
   static uint8_t detectStatePrevious = LOW;
   static unsigned long detectMillis;
   detectMillis = millis();
-  uint8_t detectState = digitalRead(personPin);
+  uint8_t detectState = digitalRead(personsPin);
   if (detectState == HIGH && detectStatePrevious == LOW) {
     detectLongMillis = detectMillis;
     detectStatePrevious = HIGH;
@@ -177,7 +177,7 @@ void taskState5() {
   static uint8_t detectStatePrevious = LOW;
   static unsigned long detectMillis;
   detectMillis = millis();
-  uint8_t detectState = digitalRead(personPin);
+  uint8_t detectState = digitalRead(personsPin);
   if (detectState == HIGH && detectStatePrevious == LOW) {
     detectLongMillis = detectMillis;
     detectStatePrevious = HIGH;
