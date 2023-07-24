@@ -1,17 +1,24 @@
-#include <TridentTD_LineNotify.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
+#include <TridentTD_LineNotify.h>
 
-const int personsPin = 13;
+// Replace with your network credentials
+const char* SSID = "ONE_2.4GHz";
+const char* PASSWORD = "91919191";
+const char* LINE_TOKEN = "w9QTrv5PZYiGjVFYKbhfpb0JeXtcf6Q9wibiQCwBh5Q";  // Line Token
+char buf[19];
+
 const int schedulePin = 25;
 const int finishSchedulePin = 26;
-const int electricWallFanPin = 12;
-const int airConditionerPin = 14;
+const int personsPin = 13;
+const int airConditionerPin = 12;
+const int electricWallFanPin = 14;
 const int ventilationFanPin = 27;
 
+// Create an instance of the server
 AsyncWebServer server(80);
 
-const char *indexHtml = R"(
+const char* indexHtml = R"(
 <!DOCTYPE html>
 <html>
 
@@ -424,33 +431,27 @@ const char *indexHtml = R"(
 </html>
 )";
 
-const char *SSID = "ONE_2.4GHz";                                        // ชื่อ Wifi
-const char *PASSWORD = "91919191";                                      // รหัส Wifi
-const char *LINE_TOKEN = "w9QTrv5PZYiGjVFYKbhfpb0JeXtcf6Q9wibiQCwBh5Q"; // Line Token
-char buf[19];
-
+/* state_status */
 bool state1 = true;
 bool state2 = false;
 bool state3 = false;
 bool state4 = false;
 bool state5 = false;
 
-unsigned long timeScheduleMillis;
-bool timeScheduleCount = true;
-unsigned long timeDetectMillis;
-bool timeDetectCount = true;
+/* taskState2 */
+unsigned long classTime;
+bool classTimeState = true;
 
-void setup()
-{
-    Serial.begin(115200);
-    pinMode(personsPin, INPUT_PULLUP);
-    pinMode(schedulePin, INPUT_PULLUP);
-    pinMode(finishSchedulePin, INPUT_PULLUP);
-    pinMode(electricWallFanPin, OUTPUT);
-    pinMode(airConditionerPin, OUTPUT);
-    pinMode(ventilationFanPin, OUTPUT);
+void setup() {
+  Serial.begin(115200);
+  pinMode(personsPin, INPUT_PULLUP);
+  pinMode(schedulePin, INPUT_PULLUP);
+  pinMode(finishSchedulePin, INPUT_PULLUP);
+  pinMode(electricWallFanPin, OUTPUT);
+  pinMode(airConditionerPin, OUTPUT);
+  pinMode(ventilationFanPin, OUTPUT);
 
-    WiFi.begin(SSID, PASSWORD);
+  WiFi.begin(SSID, PASSWORD);
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(1000);
@@ -484,204 +485,197 @@ void setup()
     Serial.println("Web server started");
 }
 
-void State1()
-{
-    uint8_t schedule = digitalRead(schedulePin);
-    if (schedule == 0)
-    {
-        state1 = false;
-        state2 = true;
-        timeScheduleCount = true;
-    }
+void taskState1() {
+  uint8_t scheduleState = digitalRead(schedulePin);
+  if (scheduleState == LOW && state1) {
+    state1 = false;
+    state2 = true;
+    classTimeState = true;
+  }
 }
 
-void State2()
-{
-    static unsigned long detectDurations;
-    static unsigned long detectLongMillis;
-    static uint8_t detectStatePrevious = LOW;
-    static unsigned long detectMillis;
-    if (timeScheduleCount)
-    {
-        timeScheduleMillis = millis();
-        timeScheduleCount = false;
-    }
-    if (!timeScheduleCount && millis() - timeScheduleMillis > 20000)
-    {
-        timeScheduleCount = true;
-        digitalWrite(electricWallFanPin, LOW);
-        digitalWrite(ventilationFanPin, LOW);
-        state1 = true;
-        state2 = false;
-    }
-    detectMillis = millis();
-    uint8_t detectState = digitalRead(personsPin);
-    if (detectState == 0)
-    {
-        digitalWrite(electricWallFanPin, HIGH);
-        digitalWrite(ventilationFanPin, HIGH);
-        state2 = false;
-        state3 = true;
-        timeDetectCount = true;
-    }
-
-    if (detectState == 1 && detectStatePrevious == LOW)
-    {
-        detectLongMillis = detectMillis;
-        detectStatePrevious = HIGH;
-    }
-    detectDurations = detectMillis - detectLongMillis;
-    if (detectState == 1 && detectDurations >= 5000)
-    {
-        digitalWrite(electricWallFanPin, LOW);
-        digitalWrite(ventilationFanPin, LOW);
-    }
-    if (detectState == 0 && detectStatePrevious == HIGH)
-    {
-        detectStatePrevious = LOW;
-    }
-}
-
-void State3()
-{
-    static unsigned long detectDurations;
-    static unsigned long detectLongMillis;
-    static uint8_t detectStatePrevious = LOW;
-    static unsigned long detectMillis;
-    if (timeDetectCount)
-    {
-        timeDetectMillis = millis();
-        timeDetectCount = false;
-    }
-    if (!timeDetectCount && millis() - timeDetectMillis > 10000)
-    {
-        digitalWrite(ventilationFanPin, LOW);
-        digitalWrite(airConditionerPin, HIGH);
-        bool delay = true;
-        static unsigned long timeDelay = millis();
-        while (delay)
-        {
-            if (millis() - timeDelay >= 3000)
-            {
-                state3 = false;
-                state4 = true;
-                delay = false;
-            }
+void taskState2() {
+  static unsigned long detectDurations;
+  static unsigned long detectLongMillis;
+  static uint8_t detectStatePrevious = LOW;
+  static unsigned long detectMillis;
+  if (classTimeState && state2) {
+    classTime = millis();
+    classTimeState = false;
+  }
+  if (!classTimeState && state2) {
+    if (millis() - classTime >= 20000) {
+      state1 = true;
+      state2 = false;
+      digitalWrite(ventilationFanPin, LOW);
+      digitalWrite(electricWallFanPin, LOW);
+    } else {
+      while (true) {
+        detectMillis = millis();
+        uint8_t detectState = digitalRead(personsPin);
+        if (detectState == HIGH && detectStatePrevious == LOW) {
+          detectLongMillis = detectMillis;
+          detectStatePrevious = HIGH;
         }
+        detectDurations = detectMillis - detectLongMillis;
+        if (detectState == HIGH && detectDurations >= 5000) {
+          digitalWrite(ventilationFanPin, LOW);
+          digitalWrite(electricWallFanPin, LOW);
+          detectStatePrevious = LOW;
+          break;
+        }
+        if (detectState == LOW && detectStatePrevious == HIGH) {
+          digitalWrite(ventilationFanPin, HIGH);
+          digitalWrite(electricWallFanPin, HIGH);
+          state2 = false;
+          state3 = true;
+          detectStatePrevious = LOW;
+          break;
+        }
+        if (detectState == LOW && detectStatePrevious == LOW) {
+          digitalWrite(ventilationFanPin, HIGH);
+          digitalWrite(electricWallFanPin, HIGH);
+          state2 = false;
+          state3 = true;
+          break;
+        }
+      }
     }
-
-    detectMillis = millis();
-    uint8_t detectState = digitalRead(personsPin);
-    if (detectState == 1 && detectStatePrevious == LOW)
-    {
-        detectLongMillis = detectMillis;
-        detectStatePrevious = HIGH;
-    }
-    detectDurations = detectMillis - detectLongMillis;
-    if (detectState == 1 && detectDurations >= 5000)
-    {
-        digitalWrite(electricWallFanPin, LOW);
-        digitalWrite(ventilationFanPin, LOW);
-        state2 = true;
-        state3 = false;
-        timeDetectCount = true;
-    }
-    if (detectState == 0 && detectStatePrevious == HIGH)
-    {
-        detectStatePrevious = LOW;
-    }
+  }
 }
 
-void State4()
-{
-    static unsigned long detectDurations;
-    static unsigned long detectLongMillis;
-    static uint8_t detectStatePrevious = LOW;
-    static unsigned long detectMillis;
-    detectMillis = millis();
-    uint8_t detectState = digitalRead(personsPin);
-    if (detectState == 1 && detectStatePrevious == LOW)
-    {
-        detectLongMillis = detectMillis;
-        detectStatePrevious = HIGH;
+void taskState3() {
+  static unsigned long detectDurations;
+  static unsigned long detectLongMillis;
+  static uint8_t detectStatePrevious = LOW;
+  static unsigned long detectMillis;
+  static unsigned long detectionTime;
+  static bool detectionTimeState = true;
+  static unsigned long delayTime;
+  if (detectionTimeState && state3) {
+    detectionTime = millis();
+    detectionTimeState = false;
+  }
+  if (!detectionTimeState && state3) {
+    if (millis() - detectionTime >= 10000) {
+      digitalWrite(ventilationFanPin, LOW);
+      digitalWrite(airConditionerPin, HIGH);
+      delayTime = millis();
+      while (true) {
+        if (millis() - delayTime >= 5000) {
+          state3 = false;
+          state4 = true;
+          detectionTimeState = true;
+          break;
+        }
+      }
+    } else {
+      while (true) {
+        detectMillis = millis();
+        uint8_t detectState = digitalRead(personsPin);
+        if (detectState == HIGH && detectStatePrevious == LOW) {
+          detectLongMillis = detectMillis;
+          detectStatePrevious = HIGH;
+        }
+        detectDurations = detectMillis - detectLongMillis;
+        if (detectState == HIGH && detectDurations >= 5000) {
+          state2 = true;
+          state3 = false;
+          detectionTimeState = true;
+          detectStatePrevious = LOW;
+          break;
+        }
+        if (detectState == LOW && detectStatePrevious == HIGH) {
+          detectStatePrevious = LOW;
+          break;
+        }
+        if (detectState == LOW && detectStatePrevious == LOW) {
+          break;
+        }
+      }
     }
-    detectDurations = detectMillis - detectLongMillis;
-    if (detectState == 1 && detectDurations >= 5000)
-    {
-        digitalWrite(electricWallFanPin, LOW);
-        digitalWrite(airConditionerPin, LOW);
-        state1 = true;
-        state4 = false;
-    }
-    if (detectState == 0 && detectStatePrevious == HIGH)
-    {
-        detectStatePrevious = LOW;
-    }
-    uint8_t finishSchedule = digitalRead(finishSchedulePin);
-    if (finishSchedule == 0)
-    {
-        digitalWrite(airConditionerPin, LOW);
-        digitalWrite(ventilationFanPin, HIGH);
-        state4 = false;
-        state5 = true;
-    }
+  }
 }
 
-void State5()
-{
-    static unsigned long detectDurations;
-    static unsigned long detectLongMillis;
-    static uint8_t detectStatePrevious = LOW;
-    static unsigned long detectMillis;
-    detectMillis = millis();
-    uint8_t detectState = digitalRead(personsPin);
-    if (detectState == 1 && detectStatePrevious == LOW)
-    {
-        detectLongMillis = detectMillis;
-        detectStatePrevious = HIGH;
-    }
-    detectDurations = detectMillis - detectLongMillis;
-    if (detectState == 1 && detectDurations >= 5000)
-    {
-        digitalWrite(electricWallFanPin, LOW);
-        digitalWrite(ventilationFanPin, LOW);
-        state1 = true;
-        state5 = false;
-    }
-    if (detectState == 0 && detectStatePrevious == HIGH)
-    {
-        detectStatePrevious = LOW;
-    }
+void taskState4() {
+  static unsigned long detectDurations;
+  static unsigned long detectLongMillis;
+  static uint8_t detectStatePrevious = LOW;
+  static unsigned long detectMillis;
+  detectMillis = millis();
+  uint8_t detectState = digitalRead(personsPin);
+  if (detectState == HIGH && detectStatePrevious == LOW) {
+    detectLongMillis = detectMillis;
+    detectStatePrevious = HIGH;
+  }
+  detectDurations = detectMillis - detectLongMillis;
+  if (detectState == HIGH && detectDurations >= 5000) {
+    digitalWrite(electricWallFanPin, LOW);
+    digitalWrite(ventilationFanPin, LOW);
+    digitalWrite(airConditionerPin, LOW);
+    state1 = true;
+    state4 = false;
+    detectStatePrevious = LOW;
+  }
+  if (detectState == LOW && detectStatePrevious == HIGH) {
+    detectStatePrevious = LOW;
+  }
 
-    uint8_t schedule = digitalRead(schedulePin);
-    if (schedule == 0)
-    {
-        state2 = true;
-        state5 = false;
-        timeScheduleCount = true;
-    }
+  uint8_t finishScheduleState = digitalRead(finishSchedulePin);
+  if (finishScheduleState == LOW && state4) {
+    digitalWrite(airConditionerPin, LOW);
+    digitalWrite(ventilationFanPin, HIGH);
+    state4 = false;
+    state5 = true;
+    detectStatePrevious = LOW;
+  }
 }
 
-void loop()
-{
-    while (state1)
-    {
-        State1();
-    }
-    while (state2)
-    {
-        State2();
-    }
-    while (state3)
-    {
-        State3();
-    }
-    while (state4)
-    {
-        State4();
-    }
-    while (state5)
-    {
-        State5();
-    }
+void taskState5() {
+  static unsigned long detectDurations;
+  static unsigned long detectLongMillis;
+  static uint8_t detectStatePrevious = LOW;
+  static unsigned long detectMillis;
+  detectMillis = millis();
+  uint8_t detectState = digitalRead(personsPin);
+  if (detectState == HIGH && detectStatePrevious == LOW) {
+    detectLongMillis = detectMillis;
+    detectStatePrevious = HIGH;
+  }
+  detectDurations = detectMillis - detectLongMillis;
+  if (detectState == HIGH && detectDurations >= 5000) {
+    digitalWrite(electricWallFanPin, LOW);
+    digitalWrite(ventilationFanPin, LOW);
+    state1 = true;
+    state5 = false;
+    detectStatePrevious = LOW;
+  }
+  if (detectState == LOW && detectStatePrevious == HIGH) {
+    detectStatePrevious = LOW;
+  }
+  uint8_t scheduleState = digitalRead(schedulePin);
+  if (scheduleState == LOW && state5) {
+    state2 = true;
+    state5 = false;
+    classTimeState = true;
+    detectStatePrevious = LOW;
+  }
+}
+
+void loop() {
+  while (state1) {
+    taskState1();
+  }
+  while (state2) {
+    taskState2();
+  }
+  while (state3) {
+    taskState3();
+  }
+  while (state4) {
+    taskState4();
+  }
+  while (state5) {
+    taskState5();
+  }
 }
