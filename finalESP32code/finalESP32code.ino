@@ -25,17 +25,40 @@ const char* indexHtml = R"(
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Document</title>
+    <title>ESP32 Device Status</title>
     <script>
+        function startTime() {
+            const today = new Date();
+            const month = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+            const day = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+            let nameMonth = month[today.getMonth()];
+            let nameDay = day[today.getDay()];
+            let year = today.getFullYear() + 543;
+            let d = today.getDay();
+            let h = today.getHours();
+            let m = today.getMinutes();
+            let s = today.getSeconds();
+            m = checkTime(m);
+            s = checkTime(s);
+            document.getElementById('date').innerHTML = 'วัน' + nameDay + ' ' + nameMonth + ' ' + year;
+            document.getElementById('time').innerHTML = 'เวลา ' + h + '.' + m + '.' + s + ' น.';
+            setTimeout(startTime, 1000);
+        }
+
+        function checkTime(i) {
+            if (i < 10) { i = '0' + i };  // add zero in front of numbers < 10
+            return i;
+        }
+
         // Function to update the device statuses
         function updateDeviceStatus() {
-            fetch("/status")
+            fetch('/status')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById("persons").innerHTML = data.persons;
-                    document.getElementById("air-conditioner").innerHTML = data.air_conditioner;
-                    document.getElementById("electric-wall-fan").innerHTML = data.electric_wall_fan;
-                    document.getElementById("ventilation-fan").innerHTML = data.ventilation_fan;
+                    document.getElementById('persons').innerHTML = data.persons;
+                    document.getElementById('air-conditioner').innerHTML = data.air_conditioner;
+                    document.getElementById('electric-wall-fan').innerHTML = data.electric_wall_fan;
+                    document.getElementById('ventilation-fan').innerHTML = data.ventilation_fan;
                 });
         }
 
@@ -335,7 +358,11 @@ const char* indexHtml = R"(
     </style>
 </head>
 
-<body>
+<body onload='startTime()'>
+    <div style='text-align: right; font-family: arial, sans-serif; margin-bottom: 10px;'>
+        <b><a id='date'></a><br>
+            <a id='time'></a></b>
+    </div>
     <div class='grid-container' style='background-color: black; font-family: arial, sans-serif;'>
         <div class='item1' style='color: white; background-color: #FF7F50; font-size: larger;'><b>ตารางเรียน</b></div>
         <div class='item2-1'>จันทร์</div>
@@ -412,16 +439,16 @@ const char* indexHtml = R"(
             </tr>
             <tr>
                 <td>
-                    <p><span id="air-conditioner">Loading...</span></p>
+                    <p><span id='air-conditioner'>Loading...</span></p>
                 </td>
                 <td>
-                    <p><span id="electric-wall-fan">Loading...</span></p>
+                    <p><span id='electric-wall-fan'>Loading...</span></p>
                 </td>
                 <td>
-                    <p><span id="ventilation-fan">Loading...</span></p>
+                    <p><span id='ventilation-fan'>Loading...</span></p>
                 </td>
                 <td>
-                    <p><span id="persons">Loading...</span></p>
+                    <p><span id='persons'>Loading...</span></p>
                 </td>
             </tr>
         </table>
