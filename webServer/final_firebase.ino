@@ -3,8 +3,8 @@
 #include <FirebaseESP32.h>
 
 // Replace with your network credentials
-const char* ssid = "COC123";
-const char* password = "ooooo123";
+const char* ssid = "ONE_2.4GHz";
+const char* password = "91919191";
 
 // Replace with your Firebase project credentials
 #define FIREBASE_HOST "https://esp32-website-default-rtdb.asia-southeast1.firebasedatabase.app"
