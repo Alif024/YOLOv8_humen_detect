@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Device Status</title>
+</head>
+
+<body>
+  <h1>Device Status</h1>
+  <p>status airConditioner: <span id="pin1Status">Loading...</span></p>
+  <p>status electricWallFan: <span id="pin2Status">Loading...</span></p>
+  <p>status ventilationFan: <span id="pin3Status">Loading...</span></p>
+  <p>status persons: <span id="pin4Status">Loading...</span></p>
+
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+    import { getDatabase, ref, child, get } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAZw4zsGLxItXGbpNqqf44teLAUv1EZE48",
+      authDomain: "esp32-website.firebaseapp.com",
+      databaseURL: "https://esp32-website-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "esp32-website",
+      storageBucket: "esp32-website.appspot.com",
+      messagingSenderId: "848669352187",
+      appId: "1:848669352187:web:38f47c0fea55293c82105e"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    // Initialize Realtime Database and get a reference to the service
+
+    const dbRef = ref(getDatabase(app));
+
+    // Function to update the pin status on the website
+    function updatePinStatus_output(pinNumber, status) {
+      const statusElement = document.getElementById(`pin${pinNumber}Status`);
+      if (statusElement) {
+        statusElement.textContent = status ? 'ON' : 'OFF';
+      }
+    }
+    function updatePinStatus_input(pinNumber, status) {
+      const statusElement = document.getElementById(`pin${pinNumber}Status`);
+      if (statusElement) {
+        statusElement.textContent = status ? 'OFF' : 'ON';
+      }
+    }
+
+    // Function to fetch and update pin statuses from Firebase
+    function updateStatusFromFirebase() {
+      const pinStatusRef = get(child(dbRef, "/pin_status")).then((snapshot) => {
+        if (snapshot.exists()) {
+          const pinStatus = snapshot.val();
+          updatePinStatus_output(1, pinStatus.pin1);
+          updatePinStatus_output(2, pinStatus.pin2);
+          updatePinStatus_output(3, pinStatus.pin3);
+          updatePinStatus_input(4, pinStatus.pin4);
+        } else {
+          console.log("No data available");
+        }
+      }).catch((error) => {
+        console.error(error);
+      });
+    }
+
+    // Initial update when the page loads
+    updateStatusFromFirebase();
+
+    // Set interval to update the status every 1 seconds
+    setInterval(updateStatusFromFirebase, 1000);
+  </script>
+</body>
+
+</html>
