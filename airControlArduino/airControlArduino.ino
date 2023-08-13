@@ -1,192 +1,374 @@
-const int personPin = 0;
-const int schedulePin = 1;
-const int finishSchedulePin = 2;
-const int personLED = 3;
-const int electricWallFanPin = 4;
-const int airConditionerPin = 5;
-const int ventilationFanPin = 6;
-const int state1Pin = 8;
-const int state2Pin = 9;
-const int state3Pin = 10;
-const int state4Pin = 11;
-const int state5Pin = 12;
+#define peoplePin 0
+#define schedulePin 1
+#define electricWallFanPin 4
+#define ventilationFanPin 6
+#define airConditionerPin 5
 
-/* state_status */
 bool state1 = true;
 bool state2 = false;
 bool state3 = false;
 bool state4 = false;
 bool state5 = false;
 
-/* taskState2 */
-unsigned long classTime;
-bool classTimeState = true;
+bool scheduleState = false;
+
+/* arduino uno */
+#define peopleLED 3
+#define state1LED 8
+#define state2LED 9
+#define state3LED 10
+#define state4LED 11
+#define state5LED 12
 
 void setup() {
-  pinMode(personPin, INPUT_PULLUP);
+  pinMode(peoplePin, INPUT_PULLUP);
   pinMode(schedulePin, INPUT_PULLUP);
-  pinMode(finishSchedulePin, INPUT_PULLUP);
   pinMode(electricWallFanPin, OUTPUT);
-  pinMode(airConditionerPin, OUTPUT);
   pinMode(ventilationFanPin, OUTPUT);
-  pinMode(personLED, OUTPUT);
-  pinMode(state1Pin, OUTPUT);
-  pinMode(state2Pin, OUTPUT);
-  pinMode(state3Pin, OUTPUT);
-  pinMode(state4Pin, OUTPUT);
-  pinMode(state5Pin, OUTPUT);
-  digitalWrite(state1Pin, HIGH);
-  digitalWrite(state2Pin, LOW);
-  digitalWrite(state3Pin, LOW);
-  digitalWrite(state4Pin, LOW);
-  digitalWrite(state5Pin, LOW);
+  pinMode(airConditionerPin, OUTPUT);
+
+  /* arduino uno */
+  pinMode(peopleLED, OUTPUT);
+  pinMode(state1LED, OUTPUT);
+  pinMode(state2LED, OUTPUT);
+  pinMode(state3LED, OUTPUT);
+  pinMode(state4LED, OUTPUT);
+  digitalWrite(state1LED, HIGH);
+  digitalWrite(state2LED, LOW);
+  digitalWrite(state3LED, LOW);
+  digitalWrite(state4LED, LOW);
 }
 
 void taskState1() {
-  uint8_t scheduleState = digitalRead(schedulePin);
-  if (scheduleState == LOW && state1) {
+  static int peopleStatusPrevious = LOW;
+  static unsigned long detectMillis;
+  static unsigned long detectDurations;
+  static unsigned long longDetectMillis;
+
+  int schedule = digitalRead(schedulePin);
+  if (schedule == 0 && !scheduleState && state1) {
+    scheduleState = true;
     state1 = false;
     state2 = true;
-    digitalWrite(state1Pin, LOW);
-    digitalWrite(state2Pin, HIGH);
-    classTimeState = true;
+
+    /* arduino uno */
+    digitalWrite(state1LED, LOW);
+    digitalWrite(state2LED, HIGH);
+
+    peopleStatusPrevious = LOW;
+  } else if (schedule == 1 && scheduleState && state1) {
+    scheduleState = false;
   }
-  uint8_t personState = digitalRead(personPin);
-  if (personState == LOW) {
-    digitalWrite(personLED, HIGH);
+
+  int people = digitalRead(peoplePin);
+
+  /* arduino uno */
+  if (people == 0) {
+    digitalWrite(peopleLED, HIGH);
   } else {
-    digitalWrite(personLED, LOW);
+    digitalWrite(peopleLED, LOW);
+  }
+
+  if (people == 1 && state1) {
+    /* when the person cannot be found */
+    while (true) {
+
+      int schedule = digitalRead(schedulePin);
+      if (schedule == 0 && !scheduleState) {
+        scheduleState = true;
+        state1 = false;
+        state2 = true;
+
+        /* arduino uno */
+        digitalWrite(state1LED, LOW);
+        digitalWrite(state2LED, HIGH);
+
+        peopleStatusPrevious = LOW;
+        break;
+      }
+
+      detectMillis = millis();
+      if (peopleStatusPrevious == LOW) {
+
+        longDetectMillis = detectMillis;
+        peopleStatusPrevious = HIGH;
+      }
+      detectDurations = detectMillis - longDetectMillis;
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 10000) {
+        digitalWrite(ventilationFanPin, LOW);
+        digitalWrite(electricWallFanPin, LOW);
+
+        peopleStatusPrevious = LOW;
+        break;
+      }
+
+      int people = digitalRead(peoplePin);
+
+      /* arduino uno */
+      if (people == 0) {
+        digitalWrite(peopleLED, HIGH);
+      } else {
+        digitalWrite(peopleLED, LOW);
+      }
+      if (people == 0) {
+        peopleStatusPrevious = LOW;
+        break;
+      }
+    }
+  } else if (people == 0 && state1) {
+    /* when detecting a person */
+    while (true) {
+
+      int schedule = digitalRead(schedulePin);
+      if (schedule == 0 && !scheduleState) {
+        scheduleState = true;
+        state1 = false;
+        state2 = true;
+
+        /* arduino uno */
+        digitalWrite(state1LED, LOW);
+        digitalWrite(state2LED, HIGH);
+
+        peopleStatusPrevious = LOW;
+        break;
+      }
+
+      detectMillis = millis();
+      if (peopleStatusPrevious == LOW) {
+        longDetectMillis = detectMillis;
+        peopleStatusPrevious = HIGH;
+      }
+      detectDurations = detectMillis - longDetectMillis;
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 5000) {
+        digitalWrite(ventilationFanPin, HIGH);
+        digitalWrite(electricWallFanPin, HIGH);
+
+        peopleStatusPrevious = LOW;
+        break;
+      }
+
+      int people = digitalRead(peoplePin);
+
+      /* arduino uno */
+      if (people == 0) {
+        digitalWrite(peopleLED, HIGH);
+      } else {
+        digitalWrite(peopleLED, LOW);
+      }
+      if (people == 1) {
+        peopleStatusPrevious = LOW;
+        break;
+      }
+    }
   }
 }
 
 void taskState2() {
-  static unsigned long detectDurations;
-  static unsigned long detectLongMillis;
-  static uint8_t detectStatePrevious = LOW;
+  static int peopleStatusPrevious = LOW;
   static unsigned long detectMillis;
-  if (classTimeState && state2) {
-    classTime = millis();
-    classTimeState = false;
-  }
-  if (!classTimeState && state2) {
-    if (millis() - classTime >= 20000) {
-      state1 = true;
-      state2 = false;
-      digitalWrite(state1Pin, HIGH);
-      digitalWrite(state2Pin, LOW);
-      digitalWrite(ventilationFanPin, LOW);
-      digitalWrite(electricWallFanPin, LOW);
+  static unsigned long detectDurations;
+  static unsigned long longDetectMillis;
+
+  int schedule = digitalRead(schedulePin);
+  if (schedule == 1 && scheduleState && state2) {
+    state1 = true;
+    state2 = false;
+
+    /* arduino uno */
+    digitalWrite(state1LED, HIGH);
+    digitalWrite(state2LED, LOW);
+
+    peopleStatusPrevious = LOW;
+  } else {
+    int people = digitalRead(peoplePin);
+    /* arduino uno */
+    if (people == 0) {
+      digitalWrite(peopleLED, HIGH);
     } else {
+      digitalWrite(peopleLED, LOW);
+    }
+    if (people == 1 && state2) {
+      /* when the person cannot be found */
       while (true) {
+        int schedule = digitalRead(schedulePin);
+        if (schedule == 1) {
+          break;
+        }
         detectMillis = millis();
-        uint8_t detectState = digitalRead(personPin);
-        if (detectState == LOW) {
-          digitalWrite(personLED, HIGH);
-        } else {
-          digitalWrite(personLED, LOW);
+        if (peopleStatusPrevious == LOW) {
+          longDetectMillis = detectMillis;
+          peopleStatusPrevious = HIGH;
         }
-        if (detectState == HIGH && detectStatePrevious == LOW) {
-          detectLongMillis = detectMillis;
-          detectStatePrevious = HIGH;
-        }
-        detectDurations = detectMillis - detectLongMillis;
-        if (detectState == HIGH && detectDurations >= 5000) {
+        detectDurations = detectMillis - longDetectMillis;
+        if (people == 1 && detectDurations >= 10000) {
           digitalWrite(ventilationFanPin, LOW);
           digitalWrite(electricWallFanPin, LOW);
-          detectStatePrevious = LOW;
+
+          peopleStatusPrevious = LOW;
           break;
         }
-        if (detectState == LOW && detectStatePrevious == HIGH) {
-          digitalWrite(ventilationFanPin, HIGH);
-          digitalWrite(electricWallFanPin, HIGH);
-          state2 = false;
-          state3 = true;
-          digitalWrite(state2Pin, LOW);
-          digitalWrite(state3Pin, HIGH);
-          detectStatePrevious = LOW;
-          break;
+        int people = digitalRead(peoplePin);
+        /* arduino uno */
+        if (people == 0) {
+          digitalWrite(peopleLED, HIGH);
+        } else {
+          digitalWrite(peopleLED, LOW);
         }
-        if (detectState == LOW && detectStatePrevious == LOW) {
-          digitalWrite(ventilationFanPin, HIGH);
-          digitalWrite(electricWallFanPin, HIGH);
-          state2 = false;
-          state3 = true;
-          digitalWrite(state2Pin, LOW);
-          digitalWrite(state3Pin, HIGH);
+        if (people == 0) {
+          peopleStatusPrevious = LOW;
           break;
         }
       }
-    }
-    uint8_t personState = digitalRead(personPin);
-    if (personState == LOW) {
-      digitalWrite(personLED, HIGH);
-    } else {
-      digitalWrite(personLED, LOW);
+    } else if (people == 0 && state2) {
+      /* when detecting a person */
+      while (true) {
+        int schedule = digitalRead(schedulePin);
+        if (schedule == 1) {
+          break;
+        }
+        detectMillis = millis();
+        if (peopleStatusPrevious == LOW) {
+          longDetectMillis = detectMillis;
+          peopleStatusPrevious = HIGH;
+        }
+        detectDurations = detectMillis - longDetectMillis;
+        if (people == 0 && detectDurations >= 5000) {
+          digitalWrite(ventilationFanPin, HIGH);
+          digitalWrite(electricWallFanPin, HIGH);
+          state2 = false;
+          state3 = true;
+          /* arduino uno */
+          digitalWrite(state2LED, LOW);
+          digitalWrite(state3LED, HIGH);
+          peopleStatusPrevious = LOW;
+          break;
+        }
+        int people = digitalRead(peoplePin);
+        /* arduino uno */
+        if (people == 0) {
+          digitalWrite(peopleLED, HIGH);
+        } else {
+          digitalWrite(peopleLED, LOW);
+        }
+        if (people == 1) {
+          peopleStatusPrevious = LOW;
+          break;
+        }
+      }
     }
   }
 }
 
 void taskState3() {
-  static unsigned long detectDurations;
-  static unsigned long detectLongMillis;
-  static uint8_t detectStatePrevious = LOW;
+  static int peopleStatusPrevious = LOW;
   static unsigned long detectMillis;
-  static unsigned long detectionTime;
-  static bool detectionTimeState = true;
-  static unsigned long delayTime;
-  if (detectionTimeState && state3) {
-    detectionTime = millis();
-    detectionTimeState = false;
-  }
-  if (!detectionTimeState && state3) {
-    if (millis() - detectionTime >= 10000) {
-      digitalWrite(ventilationFanPin, LOW);
-      digitalWrite(airConditionerPin, HIGH);
-      digitalWrite(state3Pin, LOW);
-      digitalWrite(state4Pin, HIGH);
-      delayTime = millis();
+  static unsigned long detectDurations;
+  static unsigned long longDetectMillis;
+  int schedule = digitalRead(schedulePin);
+  if (schedule == 1 && scheduleState && state3) {
+    state1 = true;
+    state3 = false;
+    /* arduino uno */
+    digitalWrite(state1LED, HIGH);
+    digitalWrite(state3LED, LOW);
+    peopleStatusPrevious = LOW;
+  } else {
+    int people = digitalRead(peoplePin);
+    /* arduino uno */
+    if (people == 0) {
+      digitalWrite(peopleLED, HIGH);
+    } else {
+      digitalWrite(peopleLED, LOW);
+    }
+    if (people == 1 && state3) {
+      /* when the person cannot be found */
       while (true) {
-        if (millis() - delayTime >= 5000) {
-          state3 = false;
-          state4 = true;
-          detectionTimeState = true;
+        int schedule = digitalRead(schedulePin);
+        if (schedule == 1) {
           break;
         }
-        uint8_t personState = digitalRead(personPin);
-        if (personState == LOW) {
-          digitalWrite(personLED, HIGH);
-        } else {
-          digitalWrite(personLED, LOW);
-        }
-      }
-    } else {
-      while (true) {
         detectMillis = millis();
-        uint8_t detectState = digitalRead(personPin);
-        if (detectState == LOW) {
-          digitalWrite(personLED, HIGH);
-        } else {
-          digitalWrite(personLED, LOW);
+        if (peopleStatusPrevious == LOW) {
+          longDetectMillis = detectMillis;
+          peopleStatusPrevious = HIGH;
         }
-        if (detectState == HIGH && detectStatePrevious == LOW) {
-          detectLongMillis = detectMillis;
-          detectStatePrevious = HIGH;
-        }
-        detectDurations = detectMillis - detectLongMillis;
-        if (detectState == HIGH && detectDurations >= 5000) {
+        detectDurations = detectMillis - longDetectMillis;
+        if (people == 1 && detectDurations >= 20000) {
           state2 = true;
           state3 = false;
-          digitalWrite(state2Pin, HIGH);
-          digitalWrite(state3Pin, LOW);
-          detectionTimeState = true;
-          detectStatePrevious = LOW;
+          digitalWrite(electricWallFanPin, LOW);
+          digitalWrite(ventilationFanPin, LOW);
+          /* arduino uno */
+          digitalWrite(state2LED, HIGH);
+          digitalWrite(state3LED, LOW);
+          peopleStatusPrevious = LOW;
           break;
         }
-        if (detectState == LOW && detectStatePrevious == HIGH) {
-          detectStatePrevious = LOW;
+        int people = digitalRead(peoplePin);
+        /* arduino uno */
+        if (people == 0) {
+          digitalWrite(peopleLED, HIGH);
+        } else {
+          digitalWrite(peopleLED, LOW);
+        }
+        if (people == 0) {
+          peopleStatusPrevious = LOW;
           break;
         }
-        if (detectState == LOW && detectStatePrevious == LOW) {
+      }
+    } else if (people == 0 && state3) {
+      /* when detecting a person */
+      while (true) {
+        int schedule = digitalRead(schedulePin);
+        if (schedule == 1) {
+          break;
+        }
+        detectMillis = millis();
+        if (peopleStatusPrevious == LOW) {
+          longDetectMillis = detectMillis;
+          peopleStatusPrevious = HIGH;
+        }
+        detectDurations = detectMillis - longDetectMillis;
+        if (people == 0 && detectDurations >= 5000) {
+          int ventilationFan = digitalRead(ventilationFanPin);
+          int electricWallFan = digitalRead(electricWallFanPin);
+          int airConditioner = digitalRead(airConditionerPin);
+          digitalWrite(ventilationFanPin, LOW);
+          digitalWrite(electricWallFanPin, HIGH);
+          digitalWrite(airConditionerPin, HIGH);
+
+          state3 = false;
+          state4 = true;
+          /* arduino uno */
+          digitalWrite(state3LED, LOW);
+          digitalWrite(state4LED, HIGH);
+          static unsigned long delay;
+          delay = millis();
+          while (true) {
+            if (millis() - delay >= 10000) {
+              break;
+            }
+            int people = digitalRead(peoplePin);
+            /* arduino uno */
+            if (people == 0) {
+              digitalWrite(peopleLED, HIGH);
+            } else {
+              digitalWrite(peopleLED, LOW);
+            }
+          }
+
+          peopleStatusPrevious = LOW;
+          break;
+        }
+        int people = digitalRead(peoplePin);
+        /* arduino uno */
+        if (people == 0) {
+          digitalWrite(peopleLED, HIGH);
+        } else {
+          digitalWrite(peopleLED, LOW);
+        }
+        if (people == 1) {
+          peopleStatusPrevious = LOW;
           break;
         }
       }
@@ -195,85 +377,52 @@ void taskState3() {
 }
 
 void taskState4() {
-  static unsigned long detectDurations;
-  static unsigned long detectLongMillis;
-  static uint8_t detectStatePrevious = LOW;
+  static int peopleStatusPrevious = LOW;
   static unsigned long detectMillis;
-  detectMillis = millis();
-  uint8_t detectState = digitalRead(personPin);
-  if (detectState == LOW) {
-    digitalWrite(personLED, HIGH);
-  } else {
-    digitalWrite(personLED, LOW);
-  }
-  if (detectState == HIGH && detectStatePrevious == LOW) {
-    detectLongMillis = detectMillis;
-    detectStatePrevious = HIGH;
-  }
-  detectDurations = detectMillis - detectLongMillis;
-  if (detectState == HIGH && detectDurations >= 5000) {
-    digitalWrite(electricWallFanPin, LOW);
-    digitalWrite(ventilationFanPin, LOW);
-    digitalWrite(airConditionerPin, LOW);
+  static unsigned long detectDurations;
+  static unsigned long longDetectMillis;
+  int schedule = digitalRead(schedulePin);
+  if (schedule == 1 && scheduleState && state4) {
     state1 = true;
     state4 = false;
-    digitalWrite(state1Pin, HIGH);
-    digitalWrite(state4Pin, LOW);
-    detectStatePrevious = LOW;
-  }
-  if (detectState == LOW && detectStatePrevious == HIGH) {
-    detectStatePrevious = LOW;
-  }
 
-  uint8_t finishScheduleState = digitalRead(finishSchedulePin);
-  if (finishScheduleState == LOW && state4) {
-    digitalWrite(airConditionerPin, LOW);
+    /* arduino uno */
+    digitalWrite(state1LED, HIGH);
+    digitalWrite(state4LED, LOW);
     digitalWrite(ventilationFanPin, HIGH);
-    state4 = false;
-    state5 = true;
-    digitalWrite(state4Pin, LOW);
-    digitalWrite(state5Pin, HIGH);
-    detectStatePrevious = LOW;
-  }
-}
+    digitalWrite(airConditionerPin, LOW);
 
-void taskState5() {
-  static unsigned long detectDurations;
-  static unsigned long detectLongMillis;
-  static uint8_t detectStatePrevious = LOW;
-  static unsigned long detectMillis;
-  detectMillis = millis();
-  uint8_t detectState = digitalRead(personPin);
-  if (detectState == LOW) {
-    digitalWrite(personLED, HIGH);
+    peopleStatusPrevious = LOW;
+  }
+
+  /* when the person cannot be found */
+  int people = digitalRead(peoplePin);
+  /* arduino uno */
+  if (people == 0) {
+    digitalWrite(peopleLED, HIGH);
   } else {
-    digitalWrite(personLED, LOW);
+    digitalWrite(peopleLED, LOW);
   }
-  if (detectState == HIGH && detectStatePrevious == LOW) {
-    detectLongMillis = detectMillis;
-    detectStatePrevious = HIGH;
+  detectMillis = millis();
+  if (people == 1 && peopleStatusPrevious == LOW) {
+    longDetectMillis = detectMillis;
+    peopleStatusPrevious = HIGH;
   }
-  detectDurations = detectMillis - detectLongMillis;
-  if (detectState == HIGH && detectDurations >= 5000) {
-    digitalWrite(electricWallFanPin, LOW);
-    digitalWrite(ventilationFanPin, LOW);
+  detectDurations = detectMillis - longDetectMillis;
+  if (people == 1 && detectDurations >= 10000) {
     state1 = true;
-    state5 = false;
-    digitalWrite(state1Pin, HIGH);
-    digitalWrite(state5Pin, LOW);
-    detectStatePrevious = LOW;
+    state4 = false;
+    /* arduino uno */
+    digitalWrite(state1LED, HIGH);
+    digitalWrite(state4LED, LOW);
+
+    digitalWrite(ventilationFanPin, LOW);
+    digitalWrite(airConditionerPin, LOW);
+    digitalWrite(electricWallFanPin, LOW);
+    peopleStatusPrevious = LOW;
   }
-  if (detectState == LOW && detectStatePrevious == HIGH) {
-    detectStatePrevious = LOW;
-  }
-  uint8_t scheduleState = digitalRead(schedulePin);
-  if (scheduleState == LOW && state5) {
-    state2 = true;
-    state5 = false;
-    digitalWrite(state2Pin, HIGH);
-    digitalWrite(state5Pin, LOW);
-    classTimeState = true;
-    detectStatePrevious = LOW;
+  if (people == 0) {
+    peopleStatusPrevious = LOW;
   }
 }
 
@@ -289,8 +438,5 @@ void loop() {
   }
   while (state4) {
     taskState4();
-  }
-  while (state5) {
-    taskState5();
   }
 }
