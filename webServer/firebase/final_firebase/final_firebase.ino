@@ -3,8 +3,8 @@
 #include <FirebaseESP32.h>
 
 // Replace with your network credentials
-const char* ssid = "ONE_2.4GHz";
-const char* password = "91919191";
+#define ssid "ONE_2.4GHz"
+#define password "91919191"
 
 // Replace with your Firebase project credentials
 #define FIREBASE_HOST "https://esp32-website-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -13,15 +13,15 @@ const char* password = "91919191";
 // Replace with the path to your pin status data on Firebase
 #define FIREBASE_PIN_STATUS_PATH "/pin_status"
 
+#define schedulePin 25
+#define finishSchedulePin 26
+#define personsPin 13
+#define airConditionerPin 12
+#define electricWallFanPin 33
+#define ventilationFanPin 27
+
 TaskHandle_t Task1;  // Task handle for Core 0
 TaskHandle_t Task2;  // Task handle for Core 1
-
-const int schedulePin = 25;
-const int finishSchedulePin = 26;
-const int personsPin = 13;
-const int airConditionerPin = 12;
-const int electricWallFanPin = 33;
-const int ventilationFanPin = 27;
 
 /* state_status */
 bool state1 = true;
@@ -35,6 +35,14 @@ unsigned long classTime;
 bool classTimeState = true;
 
 void core1Task(void* pvParameters) {
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+  }
+
+  // Initialize Firebase
+  Firebase.begin(FIREBASE_HOST, FIREBASE_API_KEY);
   static unsigned long delay;
   delay = millis();
   while (true) {
@@ -46,50 +54,14 @@ void core1Task(void* pvParameters) {
 
     // Update pin status data to Firebase
     FirebaseData data;
-    if (Firebase.set(data, FIREBASE_PIN_STATUS_PATH "/pin1", status_airConditioner == HIGH)) {
-      Serial.println("Update successful!");
-    } else {
-      Serial.println("Update failed.");
-      Serial.println(data.errorReason());
-    }
-
-    if (Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin2", status_electricWallFan == HIGH)) {
-      Serial.println("Update successful!");
-    } else {
-      Serial.println("Update failed.");
-      Serial.println(data.errorReason());
-    }
-
-    if (Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin3", status_ventilationFan == HIGH)) {
-      Serial.println("Update successful!");
-    } else {
-      Serial.println("Update failed.");
-      Serial.println(data.errorReason());
-    }
-
-    if (Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin4", status_persons == HIGH)) {
-      Serial.println("Update successful!");
-    } else {
-      Serial.println("Update failed.");
-      Serial.println(data.errorReason());
-    }
+    Firebase.set(data, FIREBASE_PIN_STATUS_PATH "/pin1", status_airConditioner == HIGH);
+    Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin2", status_electricWallFan == HIGH);
+    Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin3", status_ventilationFan == HIGH);
+    Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin4", status_persons == HIGH);
   }
 }
 
 void setup() {
-  Serial.begin(115200);
-
-  // Connect to Wi-Fi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi...");
-  }
-  Serial.println("Connected to WiFi");
-
-  // Initialize Firebase
-  Firebase.begin(FIREBASE_HOST, FIREBASE_API_KEY);
-
   // Create the task for Core 1
   xTaskCreatePinnedToCore(core1Task, "Core1Task", 10000, NULL, 1, &Task2, 1);
 
@@ -103,7 +75,7 @@ void setup() {
 }
 
 void taskState1() {
-  uint8_t scheduleState = digitalRead(schedulePin);
+  int scheduleState = digitalRead(schedulePin);
   if (scheduleState == LOW && state1) {
     state1 = false;
     state2 = true;
@@ -114,7 +86,7 @@ void taskState1() {
 void taskState2() {
   static unsigned long detectDurations;
   static unsigned long detectLongMillis;
-  static uint8_t detectStatePrevious = LOW;
+  static int detectStatePrevious = LOW;
   static unsigned long detectMillis;
   if (classTimeState && state2) {
     classTime = millis();
@@ -129,7 +101,7 @@ void taskState2() {
     } else {
       while (true) {
         detectMillis = millis();
-        uint8_t detectState = digitalRead(personsPin);
+        int detectState = digitalRead(personsPin);
         if (detectState == HIGH && detectStatePrevious == LOW) {
           detectLongMillis = detectMillis;
           detectStatePrevious = HIGH;
@@ -164,7 +136,7 @@ void taskState2() {
 void taskState3() {
   static unsigned long detectDurations;
   static unsigned long detectLongMillis;
-  static uint8_t detectStatePrevious = LOW;
+  static int detectStatePrevious = LOW;
   static unsigned long detectMillis;
   static unsigned long detectionTime;
   static bool detectionTimeState = true;
@@ -189,7 +161,7 @@ void taskState3() {
     } else {
       while (true) {
         detectMillis = millis();
-        uint8_t detectState = digitalRead(personsPin);
+        int detectState = digitalRead(personsPin);
         if (detectState == HIGH && detectStatePrevious == LOW) {
           detectLongMillis = detectMillis;
           detectStatePrevious = HIGH;
@@ -217,10 +189,10 @@ void taskState3() {
 void taskState4() {
   static unsigned long detectDurations;
   static unsigned long detectLongMillis;
-  static uint8_t detectStatePrevious = LOW;
+  static int detectStatePrevious = LOW;
   static unsigned long detectMillis;
   detectMillis = millis();
-  uint8_t detectState = digitalRead(personsPin);
+  int detectState = digitalRead(personsPin);
   if (detectState == HIGH && detectStatePrevious == LOW) {
     detectLongMillis = detectMillis;
     detectStatePrevious = HIGH;
@@ -238,7 +210,7 @@ void taskState4() {
     detectStatePrevious = LOW;
   }
 
-  uint8_t finishScheduleState = digitalRead(finishSchedulePin);
+  int finishScheduleState = digitalRead(finishSchedulePin);
   if (finishScheduleState == LOW && state4) {
     digitalWrite(airConditionerPin, LOW);
     digitalWrite(ventilationFanPin, HIGH);
@@ -251,10 +223,10 @@ void taskState4() {
 void taskState5() {
   static unsigned long detectDurations;
   static unsigned long detectLongMillis;
-  static uint8_t detectStatePrevious = LOW;
+  static int detectStatePrevious = LOW;
   static unsigned long detectMillis;
   detectMillis = millis();
-  uint8_t detectState = digitalRead(personsPin);
+  int detectState = digitalRead(personsPin);
   if (detectState == HIGH && detectStatePrevious == LOW) {
     detectLongMillis = detectMillis;
     detectStatePrevious = HIGH;
@@ -270,7 +242,7 @@ void taskState5() {
   if (detectState == LOW && detectStatePrevious == HIGH) {
     detectStatePrevious = LOW;
   }
-  uint8_t scheduleState = digitalRead(schedulePin);
+  int scheduleState = digitalRead(schedulePin);
   if (scheduleState == LOW && state5) {
     state2 = true;
     state5 = false;
