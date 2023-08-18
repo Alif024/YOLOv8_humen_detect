@@ -340,12 +340,7 @@ void taskState4() {
   static unsigned long longDetectMillis;
   int schedule = digitalRead(schedulePin);
   if (schedule == 1 && scheduleState && state4) {
-    state1 = true;
-    state4 = false;
-    digitalWrite(ventilationFanPin, HIGH);
-    digitalWrite(airConditionerPin, LOW);
-
-    peopleStatusPrevious = LOW;
+    scheduleState = false;
   }
 
   /* when the person cannot be found */
