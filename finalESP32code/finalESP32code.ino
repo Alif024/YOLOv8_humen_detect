@@ -316,7 +316,7 @@ void taskState3() {
 
           delay = millis();
           while (true) {
-            if (millis() - delay >= 60000) {
+            if (millis() - delay >= 300000) {
               break;
             }
           }
