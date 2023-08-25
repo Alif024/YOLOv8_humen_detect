@@ -1,4 +1,4 @@
-from cv2 import VideoCapture, destroyAllWindows
+from cv2 import VideoCapture
 from ultralytics import YOLO
 from time import time, ctime, sleep
 from threading import Thread
@@ -69,6 +69,6 @@ if __name__ == "__main__":
     # starting thread 2
     t2.start()
     # wait until thread 1 is completely executed
-    t1.join()
+    # t1.join()
     # wait until thread 2 is completely executed
-    t2.join()
+    # t2.join()
