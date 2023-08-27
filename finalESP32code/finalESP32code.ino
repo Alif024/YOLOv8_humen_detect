@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include <WiFi.h>
 #include <FirebaseESP32.h>
 
@@ -13,12 +12,9 @@ const char* password = "ooooo123";
 // Replace with the path to your pin status data on Firebase
 #define FIREBASE_PIN_STATUS_PATH "/pin_status"
 
-TaskHandle_t Task1;  // Task handle for Core 0
-TaskHandle_t Task2;  // Task handle for Core 1
-
 const int schedulePin = 25;
 const int peoplePin = 13;
-const int airConditionerPin = 12;
+const int airConditionerPin = 32;
 const int electricWallFanPin = 33;
 const int ventilationFanPin = 27;
 
@@ -26,12 +22,36 @@ bool state1 = true;
 bool state2 = false;
 bool state3 = false;
 bool state4 = false;
-bool state5 = false;
 
 bool scheduleState = false;
 
-void core1Task(void* pvParameters) {
-  while (true) {
+TaskHandle_t Task1;
+
+void setup() {
+  Serial.begin(921600);
+  pinMode(peoplePin, INPUT_PULLUP);
+  pinMode(schedulePin, INPUT_PULLUP);
+  pinMode(electricWallFanPin, OUTPUT);
+  pinMode(ventilationFanPin, OUTPUT);
+  pinMode(airConditionerPin, OUTPUT);
+
+  xTaskCreatePinnedToCore(
+    Task1code, /* Function to implement the task */
+    "Task1",   /* Name of the task */
+    10000,     /* Stack size in words */
+    NULL,      /* Task input parameter */
+    1,         /* Priority of the task */
+    &Task1,    /* Task handle. */
+    0);        /* Core where the task should run */
+  delay(500);
+}
+
+void Task1code(void* parameter) {
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  // Initialize Firebase
+  Firebase.begin(FIREBASE_HOST, FIREBASE_API_KEY);
+  for (;;) {
     if (WiFi.status() != WL_CONNECTED) {
       delay(1000);
       Serial.println("Connecting to WiFi...");
@@ -73,24 +93,6 @@ void core1Task(void* pvParameters) {
       }
     }
   }
-}
-
-void setup() {
-  Serial.begin(115200);
-
-  // Connect to Wi-Fi
-  WiFi.begin(ssid, password);
-  // Initialize Firebase
-  Firebase.begin(FIREBASE_HOST, FIREBASE_API_KEY);
-
-  // Create the task for Core 1
-  xTaskCreatePinnedToCore(core1Task, "Core1Task", 10000, NULL, 1, &Task2, 1);
-
-  pinMode(peoplePin, INPUT_PULLUP);
-  pinMode(schedulePin, INPUT_PULLUP);
-  pinMode(electricWallFanPin, OUTPUT);
-  pinMode(ventilationFanPin, OUTPUT);
-  pinMode(airConditionerPin, OUTPUT);
 }
 
 void taskState1() {
@@ -304,7 +306,7 @@ void taskState3() {
           peopleStatusPrevious = HIGH;
         }
         detectDurations = detectMillis - longDetectMillis;
-        if (people == 0 && detectDurations >= 180000) {
+        if (people == 0 && detectDurations >= 10000) {
           int ventilationFan = digitalRead(ventilationFanPin);
           int electricWallFan = digitalRead(electricWallFanPin);
           int airConditioner = digitalRead(airConditionerPin);
@@ -316,7 +318,7 @@ void taskState3() {
 
           delay = millis();
           while (true) {
-            if (millis() - delay >= 300000) {
+            if (millis() - delay >= 5000) {
               break;
             }
           }
@@ -340,7 +342,12 @@ void taskState4() {
   static unsigned long longDetectMillis;
   int schedule = digitalRead(schedulePin);
   if (schedule == 1 && scheduleState && state4) {
-    scheduleState = false;
+    state1 = true;
+    state4 = false;
+    digitalWrite(ventilationFanPin, HIGH);
+    digitalWrite(airConditionerPin, LOW);
+
+    peopleStatusPrevious = LOW;
   }
 
   /* when the person cannot be found */
