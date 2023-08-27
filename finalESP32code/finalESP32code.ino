@@ -28,7 +28,7 @@ bool scheduleState = false;
 TaskHandle_t Task1;
 
 void setup() {
-  Serial.begin(921600);
+  Serial.begin(115200);
   pinMode(peoplePin, INPUT_PULLUP);
   pinMode(schedulePin, INPUT_PULLUP);
   pinMode(electricWallFanPin, OUTPUT);
@@ -55,7 +55,7 @@ void Task1code(void* parameter) {
     if (WiFi.status() != WL_CONNECTED) {
       delay(1000);
       Serial.println("Connecting to WiFi...");
-    } else {
+    } else if (WiFi.status() == WL_CONNECTED) {
       // Read pin status
       int status_airConditioner = digitalRead(airConditionerPin);
       int status_electricWallFan = digitalRead(electricWallFanPin);
