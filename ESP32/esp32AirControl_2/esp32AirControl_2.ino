@@ -59,7 +59,7 @@ void taskState1() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 10000) {
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 12000) {
         digitalWrite(ventilationFanPin, LOW);
         digitalWrite(electricWallFanPin, LOW);
 
@@ -93,7 +93,7 @@ void taskState1() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 5000) {
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 9000) {
         digitalWrite(ventilationFanPin, HIGH);
         digitalWrite(electricWallFanPin, HIGH);
 
@@ -141,7 +141,7 @@ void taskState2() {
           peopleStatusPrevious = HIGH;
         }
         detectDurations = detectMillis - longDetectMillis;
-        if (people == 1 && detectDurations >= 10000) {
+        if (people == 1 && detectDurations >= 12000) {
           digitalWrite(ventilationFanPin, LOW);
           digitalWrite(electricWallFanPin, LOW);
 
@@ -171,7 +171,7 @@ void taskState2() {
           peopleStatusPrevious = HIGH;
         }
         detectDurations = detectMillis - longDetectMillis;
-        if (people == 0 && detectDurations >= 5000) {
+        if (people == 0 && detectDurations >= 9000) {
           digitalWrite(ventilationFanPin, HIGH);
           digitalWrite(electricWallFanPin, HIGH);
           state2 = false;
@@ -219,7 +219,7 @@ void taskState3() {
           peopleStatusPrevious = HIGH;
         }
         detectDurations = detectMillis - longDetectMillis;
-        if (people == 1 && detectDurations >= 20000) {
+        if (people == 1 && detectDurations >= 12000) {
           state2 = true;
           state3 = false;
           digitalWrite(electricWallFanPin, LOW);
@@ -249,7 +249,7 @@ void taskState3() {
           peopleStatusPrevious = HIGH;
         }
         detectDurations = detectMillis - longDetectMillis;
-        if (people == 0 && detectDurations >= 5000) {
+        if (people == 0 && detectDurations >= 9000) {
           int ventilationFan = digitalRead(ventilationFanPin);
           int electricWallFan = digitalRead(electricWallFanPin);
           int airConditioner = digitalRead(airConditionerPin);
@@ -298,7 +298,7 @@ void taskState4() {
     peopleStatusPrevious = HIGH;
   }
   detectDurations = detectMillis - longDetectMillis;
-  if (people == 1 && detectDurations >= 10000) {
+  if (people == 1 && detectDurations >= 12000) {
     state1 = true;
     state4 = false;
     digitalWrite(ventilationFanPin, LOW);

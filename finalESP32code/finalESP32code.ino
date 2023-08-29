@@ -12,11 +12,11 @@ const char* password = "ooooo123";
 // Replace with the path to your pin status data on Firebase
 #define FIREBASE_PIN_STATUS_PATH "/pin_status"
 
-const int schedulePin = 25;
-const int peoplePin = 13;
-const int airConditionerPin = 32;
-const int electricWallFanPin = 33;
-const int ventilationFanPin = 27;
+#define schedulePin 25
+#define peoplePin 13
+#define airConditionerPin 32
+#define electricWallFanPin 33
+#define ventilationFanPin 27
 
 bool state1 = true;
 bool state2 = false;
@@ -28,7 +28,6 @@ bool scheduleState = false;
 TaskHandle_t Task1;
 
 void setup() {
-  Serial.begin(115200);
   pinMode(peoplePin, INPUT_PULLUP);
   pinMode(schedulePin, INPUT_PULLUP);
   pinMode(electricWallFanPin, OUTPUT);
@@ -36,7 +35,7 @@ void setup() {
   pinMode(airConditionerPin, OUTPUT);
 
   xTaskCreatePinnedToCore(
-    Task1code, /* Function to implement the task */
+    Task1, /* Function to implement the task */
     "Task1",   /* Name of the task */
     10000,     /* Stack size in words */
     NULL,      /* Task input parameter */
@@ -54,7 +53,6 @@ void Task1code(void* parameter) {
   for (;;) {
     if (WiFi.status() != WL_CONNECTED) {
       delay(1000);
-      Serial.println("Connecting to WiFi...");
     } else if (WiFi.status() == WL_CONNECTED) {
       // Read pin status
       int status_airConditioner = digitalRead(airConditionerPin);
@@ -64,33 +62,10 @@ void Task1code(void* parameter) {
 
       // Update pin status data to Firebase
       FirebaseData data;
-      if (Firebase.set(data, FIREBASE_PIN_STATUS_PATH "/pin1", status_airConditioner == HIGH)) {
-        Serial.println("Update successful!");
-      } else {
-        Serial.println("Update failed.");
-        Serial.println(data.errorReason());
-      }
-
-      if (Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin2", status_electricWallFan == HIGH)) {
-        Serial.println("Update successful!");
-      } else {
-        Serial.println("Update failed.");
-        Serial.println(data.errorReason());
-      }
-
-      if (Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin3", status_ventilationFan == HIGH)) {
-        Serial.println("Update successful!");
-      } else {
-        Serial.println("Update failed.");
-        Serial.println(data.errorReason());
-      }
-
-      if (Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin4", status_persons == HIGH)) {
-        Serial.println("Update successful!");
-      } else {
-        Serial.println("Update failed.");
-        Serial.println(data.errorReason());
-      }
+      Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin1", status_airConditioner == HIGH);
+      Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin2", status_electricWallFan == HIGH);
+      Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin3", status_ventilationFan == HIGH);
+      Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin4", status_persons == HIGH);
     }
   }
 }
@@ -106,12 +81,14 @@ void taskState1() {
     scheduleState = true;
     state1 = false;
     state2 = true;
+
     peopleStatusPrevious = LOW;
   } else if (schedule == 1 && scheduleState && state1) {
     scheduleState = false;
   }
 
   int people = digitalRead(peoplePin);
+
   if (people == 1 && state1) {
     /* when the person cannot be found */
     while (true) {
@@ -121,6 +98,7 @@ void taskState1() {
         scheduleState = true;
         state1 = false;
         state2 = true;
+
         peopleStatusPrevious = LOW;
         break;
       }
@@ -155,6 +133,7 @@ void taskState1() {
         scheduleState = true;
         state1 = false;
         state2 = true;
+
         peopleStatusPrevious = LOW;
         break;
       }
@@ -165,7 +144,7 @@ void taskState1() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 15000) {
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 5000) {
         digitalWrite(ventilationFanPin, HIGH);
         digitalWrite(electricWallFanPin, HIGH);
 
@@ -190,6 +169,7 @@ void taskState2() {
 
   int schedule = digitalRead(schedulePin);
   if (schedule == 1 && scheduleState && state2) {
+    scheduleState = false;
     state1 = true;
     state2 = false;
     peopleStatusPrevious = LOW;
@@ -199,7 +179,11 @@ void taskState2() {
       /* when the person cannot be found */
       while (true) {
         int schedule = digitalRead(schedulePin);
-        if (schedule == 1) {
+        if (schedule == 1 && scheduleState) {
+          scheduleState = false;
+          state1 = true;
+          state2 = false;
+          peopleStatusPrevious = LOW;
           break;
         }
         detectMillis = millis();
@@ -225,7 +209,11 @@ void taskState2() {
       /* when detecting a person */
       while (true) {
         int schedule = digitalRead(schedulePin);
-        if (schedule == 1) {
+        if (schedule == 1 && scheduleState) {
+          scheduleState = false;
+          state1 = true;
+          state2 = false;
+          peopleStatusPrevious = LOW;
           break;
         }
         detectMillis = millis();
@@ -234,7 +222,7 @@ void taskState2() {
           peopleStatusPrevious = HIGH;
         }
         detectDurations = detectMillis - longDetectMillis;
-        if (people == 0 && detectDurations >= 15000) {
+        if (people == 0 && detectDurations >= 5000) {
           digitalWrite(ventilationFanPin, HIGH);
           digitalWrite(electricWallFanPin, HIGH);
           state2 = false;
@@ -242,7 +230,6 @@ void taskState2() {
           peopleStatusPrevious = LOW;
           break;
         }
-
         int people = digitalRead(peoplePin);
         if (people == 1) {
           peopleStatusPrevious = LOW;
@@ -258,9 +245,9 @@ void taskState3() {
   static unsigned long detectMillis;
   static unsigned long detectDurations;
   static unsigned long longDetectMillis;
-  static unsigned long delay;
   int schedule = digitalRead(schedulePin);
   if (schedule == 1 && scheduleState && state3) {
+    scheduleState = false;
     state1 = true;
     state3 = false;
     peopleStatusPrevious = LOW;
@@ -270,7 +257,11 @@ void taskState3() {
       /* when the person cannot be found */
       while (true) {
         int schedule = digitalRead(schedulePin);
-        if (schedule == 1) {
+        if (schedule == 1 && scheduleState) {
+          scheduleState = false;
+          state1 = true;
+          state3 = false;
+          peopleStatusPrevious = LOW;
           break;
         }
         detectMillis = millis();
@@ -279,7 +270,7 @@ void taskState3() {
           peopleStatusPrevious = HIGH;
         }
         detectDurations = detectMillis - longDetectMillis;
-        if (people == 1 && detectDurations >= 10000) {
+        if (people == 1 && detectDurations >= 20000) {
           state2 = true;
           state3 = false;
           digitalWrite(electricWallFanPin, LOW);
@@ -298,6 +289,9 @@ void taskState3() {
       while (true) {
         int schedule = digitalRead(schedulePin);
         if (schedule == 1) {
+          state1 = true;
+          state3 = false;
+          peopleStatusPrevious = LOW;
           break;
         }
         detectMillis = millis();
@@ -306,22 +300,24 @@ void taskState3() {
           peopleStatusPrevious = HIGH;
         }
         detectDurations = detectMillis - longDetectMillis;
-        if (people == 0 && detectDurations >= 10000) {
+        if (people == 0 && detectDurations >= 5000) {
           int ventilationFan = digitalRead(ventilationFanPin);
           int electricWallFan = digitalRead(electricWallFanPin);
           int airConditioner = digitalRead(airConditionerPin);
           digitalWrite(ventilationFanPin, LOW);
           digitalWrite(electricWallFanPin, HIGH);
           digitalWrite(airConditionerPin, HIGH);
+
           state3 = false;
           state4 = true;
-
+          static unsigned long delay;
           delay = millis();
           while (true) {
-            if (millis() - delay >= 5000) {
+            if (millis() - delay >= 10000) {
               break;
             }
           }
+
           peopleStatusPrevious = LOW;
           break;
         }
@@ -342,12 +338,7 @@ void taskState4() {
   static unsigned long longDetectMillis;
   int schedule = digitalRead(schedulePin);
   if (schedule == 1 && scheduleState && state4) {
-    state1 = true;
-    state4 = false;
-    digitalWrite(ventilationFanPin, HIGH);
-    digitalWrite(airConditionerPin, LOW);
-
-    peopleStatusPrevious = LOW;
+    scheduleState = false;
   }
 
   /* when the person cannot be found */
