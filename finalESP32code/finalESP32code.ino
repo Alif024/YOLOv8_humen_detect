@@ -301,9 +301,6 @@ void taskState3() {
         }
         detectDurations = detectMillis - longDetectMillis;
         if (people == 0 && detectDurations >= 5000) {
-          int ventilationFan = digitalRead(ventilationFanPin);
-          int electricWallFan = digitalRead(electricWallFanPin);
-          int airConditioner = digitalRead(airConditionerPin);
           digitalWrite(ventilationFanPin, LOW);
           digitalWrite(electricWallFanPin, HIGH);
           digitalWrite(airConditionerPin, HIGH);
