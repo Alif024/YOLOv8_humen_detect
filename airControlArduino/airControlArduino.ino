@@ -81,7 +81,7 @@ void taskState1() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 10000) {
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 3000) {
         digitalWrite(ventilationFanPin, LOW);
         digitalWrite(electricWallFanPin, LOW);
         peopleStatusPrevious = LOW;
@@ -129,7 +129,7 @@ void taskState1() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 5000) {
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 3000) {
         digitalWrite(ventilationFanPin, HIGH);
         digitalWrite(electricWallFanPin, HIGH);
         peopleStatusPrevious = LOW;
@@ -156,6 +156,11 @@ void taskState1() {
 void taskState2() {
   static unsigned long detectDurations;
   static unsigned long longDetectMillis;
+  static int ventilationFan;
+  static int electricWallFan;
+
+  ventilationFan = digitalRead(ventilationFanPin);
+  electricWallFan = digitalRead(electricWallFanPin);
 
   /* ตรวจคน */
   int people = digitalRead(peoplePin);
@@ -167,7 +172,26 @@ void taskState2() {
     digitalWrite(peopleLED, LOW);
   }
 
-  if (people == 1 && state2) {
+  if (state2 && (ventilationFan == HIGH || electricWallFan == HIGH)) {
+    /* ตรวจคาบ */
+    int schedule = digitalRead(schedulePin);
+    if (schedule == 1 && scheduleState) {
+      scheduleState = false;
+      state1 = true;
+      state2 = false;
+
+      /* arduino uno */
+      digitalWrite(state1LED, HIGH);
+      digitalWrite(state2LED, LOW);
+    } else {
+      state2 = false;
+      state3 = true;
+
+      /* arduino uno */
+      digitalWrite(state2LED, LOW);
+      digitalWrite(state3LED, HIGH);
+    }
+  } else if (people == 1 && state2) {
     /* เมื่อไม่เจอคน */
     while (true) {
       /* ตรวจคาบ */
@@ -192,7 +216,7 @@ void taskState2() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 10000) {
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 3000) {
         digitalWrite(ventilationFanPin, LOW);
         digitalWrite(electricWallFanPin, LOW);
         peopleStatusPrevious = LOW;
@@ -238,7 +262,7 @@ void taskState2() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 5000) {
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 3000) {
         digitalWrite(ventilationFanPin, HIGH);
         digitalWrite(electricWallFanPin, HIGH);
         state2 = false;
@@ -309,7 +333,7 @@ void taskState3() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 20000) {
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 3000) {
         state2 = true;
         state3 = false;
 
@@ -362,7 +386,7 @@ void taskState3() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 10000) {
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 3000) {
         digitalWrite(ventilationFanPin, LOW);
         digitalWrite(electricWallFanPin, HIGH);
         digitalWrite(airConditionerPin, HIGH);
@@ -383,7 +407,7 @@ void taskState3() {
           } else {
             digitalWrite(peopleLED, LOW);
           }
-          if (millis() - delay >= 10000) {
+          if (millis() - delay >= 9000) {
             break;
           }
         }
@@ -435,7 +459,7 @@ void taskState4() {
     peopleStatusPrevious = HIGH;
   }
   detectDurations = detectMillis - longDetectMillis;
-  if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 20000) {
+  if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 6000) {
     state1 = true;
     state4 = false;
 

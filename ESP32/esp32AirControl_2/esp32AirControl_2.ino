@@ -10,6 +10,8 @@ bool state3 = false;
 bool state4 = false;
 
 bool scheduleState = false;
+int peopleStatusPrevious = LOW;
+unsigned long detectMillis;
 
 void setup() {
   pinMode(peoplePin, INPUT_PULLUP);
@@ -20,53 +22,40 @@ void setup() {
 }
 
 void taskState1() {
-  static int peopleStatusPrevious = LOW;
-  static unsigned long detectMillis;
   static unsigned long detectDurations;
   static unsigned long longDetectMillis;
 
-  int schedule = digitalRead(schedulePin);
-  if (schedule == 0 && !scheduleState && state1) {
-    scheduleState = true;
-    state1 = false;
-    state2 = true;
-
-    peopleStatusPrevious = LOW;
-  } else if (schedule == 1 && scheduleState && state1) {
-    scheduleState = false;
-  }
-
+  /* ตรวจคน */
   int people = digitalRead(peoplePin);
-
   if (people == 1 && state1) {
-    /* when the person cannot be found */
+    /* เมื่อไม่เจอคน */
     while (true) {
-
+      /* ตรวจคาบ */
       int schedule = digitalRead(schedulePin);
       if (schedule == 0 && !scheduleState) {
         scheduleState = true;
         state1 = false;
         state2 = true;
-
         peopleStatusPrevious = LOW;
         break;
+      } else if (schedule == 1 && scheduleState) {
+        scheduleState = false;
       }
 
+      /* คนไม่อยู่นานตามเวลาไหม */
       detectMillis = millis();
       if (peopleStatusPrevious == LOW) {
-
         longDetectMillis = detectMillis;
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 12000) {
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 9000) {
         digitalWrite(ventilationFanPin, LOW);
         digitalWrite(electricWallFanPin, LOW);
-
         peopleStatusPrevious = LOW;
         break;
       }
-
+      /* ตรวจคน */
       int people = digitalRead(peoplePin);
       if (people == 0) {
         peopleStatusPrevious = LOW;
@@ -74,19 +63,21 @@ void taskState1() {
       }
     }
   } else if (people == 0 && state1) {
-    /* when detecting a person */
+    /* เมื่อเจอคน */
     while (true) {
-
+      /* ตรวจคาบ */
       int schedule = digitalRead(schedulePin);
       if (schedule == 0 && !scheduleState) {
         scheduleState = true;
         state1 = false;
         state2 = true;
-
         peopleStatusPrevious = LOW;
         break;
+      } else if (schedule == 1 && scheduleState) {
+        scheduleState = false;
       }
 
+      /* คนอยู่นานตามเวลาไหม */
       detectMillis = millis();
       if (peopleStatusPrevious == LOW) {
         longDetectMillis = detectMillis;
@@ -96,11 +87,10 @@ void taskState1() {
       if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 9000) {
         digitalWrite(ventilationFanPin, HIGH);
         digitalWrite(electricWallFanPin, HIGH);
-
         peopleStatusPrevious = LOW;
         break;
       }
-
+      /* ตรวจคน */
       int people = digitalRead(peoplePin);
       if (people == 1) {
         peopleStatusPrevious = LOW;
@@ -111,194 +101,207 @@ void taskState1() {
 }
 
 void taskState2() {
-  static int peopleStatusPrevious = LOW;
-  static unsigned long detectMillis;
   static unsigned long detectDurations;
   static unsigned long longDetectMillis;
+  static int ventilationFan;
+  static int electricWallFan;
 
-  int schedule = digitalRead(schedulePin);
-  if (schedule == 1 && scheduleState && state2) {
-    scheduleState = false;
-    state1 = true;
-    state2 = false;
-    peopleStatusPrevious = LOW;
-  } else {
-    int people = digitalRead(peoplePin);
-    if (people == 1 && state2) {
-      /* when the person cannot be found */
-      while (true) {
-        int schedule = digitalRead(schedulePin);
-        if (schedule == 1 && scheduleState) {
-          scheduleState = false;
-          state1 = true;
-          state2 = false;
-          peopleStatusPrevious = LOW;
-          break;
-        }
-        detectMillis = millis();
-        if (peopleStatusPrevious == LOW) {
-          longDetectMillis = detectMillis;
-          peopleStatusPrevious = HIGH;
-        }
-        detectDurations = detectMillis - longDetectMillis;
-        if (people == 1 && detectDurations >= 12000) {
-          digitalWrite(ventilationFanPin, LOW);
-          digitalWrite(electricWallFanPin, LOW);
+  ventilationFan = digitalRead(ventilationFanPin);
+  electricWallFan = digitalRead(electricWallFanPin);
 
-          peopleStatusPrevious = LOW;
-          break;
-        }
-        int people = digitalRead(peoplePin);
-        if (people == 0) {
-          peopleStatusPrevious = LOW;
-          break;
-        }
+  /* ตรวจคน */
+  int people = digitalRead(peoplePin);
+  if (state2 && (ventilationFan == HIGH || electricWallFan == HIGH)) {
+    /* ตรวจคาบ */
+    int schedule = digitalRead(schedulePin);
+    if (schedule == 1 && scheduleState) {
+      scheduleState = false;
+      state1 = true;
+      state2 = false;
+    } else {
+      state2 = false;
+      state3 = true;
+    }
+  } else if (people == 1 && state2) {
+    /* เมื่อไม่เจอคน */
+    while (true) {
+      /* ตรวจคาบ */
+      int schedule = digitalRead(schedulePin);
+      if (schedule == 1 && scheduleState) {
+        scheduleState = false;
+        state1 = true;
+        state2 = false;
+        peopleStatusPrevious = LOW;
+        break;
       }
-    } else if (people == 0 && state2) {
-      /* when detecting a person */
-      while (true) {
-        int schedule = digitalRead(schedulePin);
-        if (schedule == 1 && scheduleState) {
-          scheduleState = false;
-          state1 = true;
-          state2 = false;
-          peopleStatusPrevious = LOW;
-          break;
-        }
-        detectMillis = millis();
-        if (peopleStatusPrevious == LOW) {
-          longDetectMillis = detectMillis;
-          peopleStatusPrevious = HIGH;
-        }
-        detectDurations = detectMillis - longDetectMillis;
-        if (people == 0 && detectDurations >= 9000) {
-          digitalWrite(ventilationFanPin, HIGH);
-          digitalWrite(electricWallFanPin, HIGH);
-          state2 = false;
-          state3 = true;
-          peopleStatusPrevious = LOW;
-          break;
-        }
-        int people = digitalRead(peoplePin);
-        if (people == 1) {
-          peopleStatusPrevious = LOW;
-          break;
-        }
+
+      /* คนไม่อยู่นานตามเวลาไหม */
+      detectMillis = millis();
+      if (peopleStatusPrevious == LOW) {
+        longDetectMillis = detectMillis;
+        peopleStatusPrevious = HIGH;
+      }
+      detectDurations = detectMillis - longDetectMillis;
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 3000) {
+        digitalWrite(ventilationFanPin, LOW);
+        digitalWrite(electricWallFanPin, LOW);
+        peopleStatusPrevious = LOW;
+        break;
+      }
+      /* ตรวจคน */
+      int people = digitalRead(peoplePin);
+      if (people == 0) {
+        peopleStatusPrevious = LOW;
+        break;
+      }
+    }
+  } else if (people == 0 && state2) {
+    /* เมื่อเจอคน */
+    while (true) {
+      /* ตรวจคาบ */
+      int schedule = digitalRead(schedulePin);
+      if (schedule == 1 && scheduleState) {
+        scheduleState = false;
+        state1 = true;
+        state2 = false;
+        peopleStatusPrevious = LOW;
+        break;
+      }
+
+      /* คนอยู่นานตามเวลาไหม */
+      detectMillis = millis();
+      if (peopleStatusPrevious == LOW) {
+        longDetectMillis = detectMillis;
+        peopleStatusPrevious = HIGH;
+      }
+      detectDurations = detectMillis - longDetectMillis;
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 3000) {
+        digitalWrite(ventilationFanPin, HIGH);
+        digitalWrite(electricWallFanPin, HIGH);
+        state2 = false;
+        state3 = true;
+        peopleStatusPrevious = LOW;
+        break;
+      }
+      /* ตรวจคน */
+      int people = digitalRead(peoplePin);
+      if (people == 1) {
+        peopleStatusPrevious = LOW;
+        break;
       }
     }
   }
 }
 
 void taskState3() {
-  static int peopleStatusPrevious = LOW;
-  static unsigned long detectMillis;
+  static unsigned long delay;
   static unsigned long detectDurations;
   static unsigned long longDetectMillis;
-  int schedule = digitalRead(schedulePin);
-  if (schedule == 1 && scheduleState && state3) {
-    scheduleState = false;
-    state1 = true;
-    state3 = false;
-    peopleStatusPrevious = LOW;
-  } else {
-    int people = digitalRead(peoplePin);
-    if (people == 1 && state3) {
-      /* when the person cannot be found */
-      while (true) {
-        int schedule = digitalRead(schedulePin);
-        if (schedule == 1 && scheduleState) {
-          scheduleState = false;
-          state1 = true;
-          state3 = false;
-          peopleStatusPrevious = LOW;
-          break;
-        }
-        detectMillis = millis();
-        if (peopleStatusPrevious == LOW) {
-          longDetectMillis = detectMillis;
-          peopleStatusPrevious = HIGH;
-        }
-        detectDurations = detectMillis - longDetectMillis;
-        if (people == 1 && detectDurations >= 12000) {
-          state2 = true;
-          state3 = false;
-          digitalWrite(electricWallFanPin, LOW);
-          digitalWrite(ventilationFanPin, LOW);
-          peopleStatusPrevious = LOW;
-          break;
-        }
-        int people = digitalRead(peoplePin);
-        if (people == 0) {
-          peopleStatusPrevious = LOW;
-          break;
-        }
+
+  /* ตรวจคน */
+  int people = digitalRead(peoplePin);
+  if (people == 1 && state3) {
+    /* เมื่อไม่เจอคน */
+    while (true) {
+      /* ตรวจคาบ */
+      int schedule = digitalRead(schedulePin);
+      if (schedule == 1 && scheduleState) {
+        scheduleState = false;
+        state1 = true;
+        state3 = false;
+        peopleStatusPrevious = LOW;
+        break;
       }
-    } else if (people == 0 && state3) {
-      /* when detecting a person */
-      while (true) {
-        int schedule = digitalRead(schedulePin);
-        if (schedule == 1) {
-          state1 = true;
-          state3 = false;
-          peopleStatusPrevious = LOW;
-          break;
-        }
-        detectMillis = millis();
-        if (peopleStatusPrevious == LOW) {
-          longDetectMillis = detectMillis;
-          peopleStatusPrevious = HIGH;
-        }
-        detectDurations = detectMillis - longDetectMillis;
-        if (people == 0 && detectDurations >= 9000) {
-          int ventilationFan = digitalRead(ventilationFanPin);
-          int electricWallFan = digitalRead(electricWallFanPin);
-          int airConditioner = digitalRead(airConditionerPin);
-          digitalWrite(ventilationFanPin, LOW);
-          digitalWrite(electricWallFanPin, HIGH);
-          digitalWrite(airConditionerPin, HIGH);
 
-          state3 = false;
-          state4 = true;
-          static unsigned long delay;
-          delay = millis();
-          while (true) {
-            if (millis() - delay >= 10000) {
-              break;
-            }
+      /* คนไม่อยู่นานตามเวลาไหม */
+      detectMillis = millis();
+      if (peopleStatusPrevious == LOW) {
+        longDetectMillis = detectMillis;
+        peopleStatusPrevious = HIGH;
+      }
+      detectDurations = detectMillis - longDetectMillis;
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 20000) {
+        state2 = true;
+        state3 = false;
+        digitalWrite(electricWallFanPin, LOW);
+        digitalWrite(ventilationFanPin, LOW);
+        peopleStatusPrevious = LOW;
+        break;
+      }
+      /* ตรวจคน */
+      int people = digitalRead(peoplePin);
+      if (people == 0) {
+        peopleStatusPrevious = LOW;
+        break;
+      }
+    }
+  } else if (people == 0 && state3) {
+    /* เมื่อเจอคน */
+    while (true) {
+      /* ตรวจคาบ */
+      int schedule = digitalRead(schedulePin);
+      if (schedule == 1 && scheduleState) {
+        scheduleState = false;
+        state1 = true;
+        state3 = false;
+        peopleStatusPrevious = LOW;
+        break;
+      }
+
+      /* คนอยู่นานตามเวลาไหม */
+      detectMillis = millis();
+      if (peopleStatusPrevious == LOW) {
+        longDetectMillis = detectMillis;
+        peopleStatusPrevious = HIGH;
+      }
+      detectDurations = detectMillis - longDetectMillis;
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 10000) {
+        digitalWrite(ventilationFanPin, LOW);
+        digitalWrite(electricWallFanPin, HIGH);
+        digitalWrite(airConditionerPin, HIGH);
+        state3 = false;
+        state4 = true;
+        /* หน่วงเวลา */
+        delay = millis();
+        while (true) {
+          if (millis() - delay >= 10000) {
+            break;
           }
-
-          peopleStatusPrevious = LOW;
-          break;
         }
-        int people = digitalRead(peoplePin);
-        if (people == 1) {
-          peopleStatusPrevious = LOW;
-          break;
-        }
+        peopleStatusPrevious = LOW;
+        break;
+      }
+      /* ตรวจคน */
+      int people = digitalRead(peoplePin);
+      if (people == 1) {
+        peopleStatusPrevious = LOW;
+        break;
       }
     }
   }
 }
 
 void taskState4() {
-  static int peopleStatusPrevious = LOW;
-  static unsigned long detectMillis;
   static unsigned long detectDurations;
   static unsigned long longDetectMillis;
+
+  /* ตรวจคาบ */
   int schedule = digitalRead(schedulePin);
-  if (schedule == 1 && scheduleState && state4) {
+  if (schedule == 1 && scheduleState) {
     scheduleState = false;
   }
 
-  /* when the person cannot be found */
+  /* ตรวจคน */
   int people = digitalRead(peoplePin);
+
+  /* คนไม่อยู่นานตามเวลาไหม */
   detectMillis = millis();
-  if (people == 1 && peopleStatusPrevious == LOW) {
+  if (peopleStatusPrevious == LOW) {
     longDetectMillis = detectMillis;
     peopleStatusPrevious = HIGH;
   }
   detectDurations = detectMillis - longDetectMillis;
-  if (people == 1 && detectDurations >= 12000) {
+  if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 20000) {
     state1 = true;
     state4 = false;
     digitalWrite(ventilationFanPin, LOW);
@@ -306,7 +309,7 @@ void taskState4() {
     digitalWrite(electricWallFanPin, LOW);
     peopleStatusPrevious = LOW;
   }
-  if (people == 0) {
+  if (people == 0 && state4) {
     peopleStatusPrevious = LOW;
   }
 }

@@ -1,3 +1,17 @@
+#include <WiFi.h>
+#include <FirebaseESP32.h>
+
+// Replace with your network credentials
+const char* ssid = "COC123";
+const char* password = "ooooo123";
+
+// Replace with your Firebase project credentials
+#define FIREBASE_HOST "https://esp32-website-default-rtdb.asia-southeast1.firebasedatabase.app"
+#define FIREBASE_API_KEY "AIzaSyAZw4zsGLxItXGbpNqqf44teLAUv1EZE48"
+
+// Replace with the path to your pin status data on Firebase
+#define FIREBASE_PIN_STATUS_PATH "/pin_status"
+
 #define schedulePin 25
 #define peoplePin 13
 #define airConditionerPin 32
@@ -13,12 +27,53 @@ bool scheduleState = false;
 int peopleStatusPrevious = LOW;
 unsigned long detectMillis;
 
+TaskHandle_t Task1;
+
 void setup() {
   pinMode(peoplePin, INPUT_PULLUP);
   pinMode(schedulePin, INPUT_PULLUP);
   pinMode(electricWallFanPin, OUTPUT);
   pinMode(ventilationFanPin, OUTPUT);
   pinMode(airConditionerPin, OUTPUT);
+
+  xTaskCreatePinnedToCore(
+    Task1code, /* Function to implement the task */
+    "Task1",   /* Name of the task */
+    10000,     /* Stack size in words */
+    NULL,      /* Task input parameter */
+    1,         /* Priority of the task */
+    &Task1,    /* Task handle. */
+    0);        /* Core where the task should run */
+  delay(500);
+}
+
+void Task1code(void* parameter) {
+  static int status_airConditioner;
+  static int status_electricWallFan;
+  static int status_ventilationFan;
+  static int status_persons;
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  // Initialize Firebase
+  Firebase.begin(FIREBASE_HOST, FIREBASE_API_KEY);
+  for (;;) {
+    if (WiFi.status() != WL_CONNECTED) {
+      delay(5000);
+    } else if (WiFi.status() == WL_CONNECTED) {
+      // Read pin status
+      status_airConditioner = digitalRead(airConditionerPin);
+      status_electricWallFan = digitalRead(electricWallFanPin);
+      status_ventilationFan = digitalRead(ventilationFanPin);
+      status_persons = digitalRead(peoplePin);
+
+      // Update pin status data to Firebase
+      FirebaseData data;
+      Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin1", status_airConditioner == HIGH);
+      Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin2", status_electricWallFan == HIGH);
+      Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin3", status_ventilationFan == HIGH);
+      Firebase.setBool(data, FIREBASE_PIN_STATUS_PATH "/pin4", status_persons == HIGH);
+    }
+  }
 }
 
 void taskState1() {
@@ -184,7 +239,7 @@ void taskState3() {
 
   /* ตรวจคน */
   int people = digitalRead(peoplePin);
-  if (people == 1 && state3) {
+  if (people == 1 && state2) {
     /* เมื่อไม่เจอคน */
     while (true) {
       /* ตรวจคาบ */
@@ -219,7 +274,7 @@ void taskState3() {
         break;
       }
     }
-  } else if (people == 0 && state3) {
+  } else if (people == 0 && state2) {
     /* เมื่อเจอคน */
     while (true) {
       /* ตรวจคาบ */
