@@ -35,7 +35,7 @@ void setup() {
   pinMode(airConditionerPin, OUTPUT);
 
   xTaskCreatePinnedToCore(
-    Task1, /* Function to implement the task */
+    Task1code, /* Function to implement the task */
     "Task1",   /* Name of the task */
     10000,     /* Stack size in words */
     NULL,      /* Task input parameter */
