@@ -104,7 +104,7 @@ void taskState1() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 10000) {
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 9000) {
         digitalWrite(ventilationFanPin, LOW);
         digitalWrite(electricWallFanPin, LOW);
         peopleStatusPrevious = LOW;
@@ -139,7 +139,7 @@ void taskState1() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 5000) {
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 9000) {
         digitalWrite(ventilationFanPin, HIGH);
         digitalWrite(electricWallFanPin, HIGH);
         peopleStatusPrevious = LOW;
@@ -197,7 +197,7 @@ void taskState2() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 3000) {
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 9000) {
         digitalWrite(ventilationFanPin, LOW);
         digitalWrite(electricWallFanPin, LOW);
         peopleStatusPrevious = LOW;
@@ -230,7 +230,7 @@ void taskState2() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 3000) {
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 9000) {
         digitalWrite(ventilationFanPin, HIGH);
         digitalWrite(electricWallFanPin, HIGH);
         state2 = false;
@@ -255,7 +255,7 @@ void taskState3() {
 
   /* ตรวจคน */
   int people = digitalRead(peoplePin);
-  if (people == 1 && state2) {
+  if (people == 1 && state3) {
     /* เมื่อไม่เจอคน */
     while (true) {
       /* ตรวจคาบ */
@@ -275,7 +275,7 @@ void taskState3() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 20000) {
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 9000) {
         state2 = true;
         state3 = false;
         digitalWrite(electricWallFanPin, LOW);
@@ -290,7 +290,7 @@ void taskState3() {
         break;
       }
     }
-  } else if (people == 0 && state2) {
+  } else if (people == 0 && state3) {
     /* เมื่อเจอคน */
     while (true) {
       /* ตรวจคาบ */
@@ -310,7 +310,7 @@ void taskState3() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 10000) {
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 21000) {
         digitalWrite(ventilationFanPin, LOW);
         digitalWrite(electricWallFanPin, HIGH);
         digitalWrite(airConditionerPin, HIGH);
@@ -319,7 +319,7 @@ void taskState3() {
         /* หน่วงเวลา */
         delay = millis();
         while (true) {
-          if (millis() - delay >= 10000) {
+          if (millis() - delay >= 21000) {
             break;
           }
         }
@@ -356,7 +356,7 @@ void taskState4() {
     peopleStatusPrevious = HIGH;
   }
   detectDurations = detectMillis - longDetectMillis;
-  if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 20000) {
+  if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 9000) {
     state1 = true;
     state4 = false;
     digitalWrite(ventilationFanPin, LOW);
