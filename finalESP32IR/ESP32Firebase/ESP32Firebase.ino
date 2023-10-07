@@ -37,6 +37,7 @@ int peopleStatusPrevious = LOW;
 unsigned long detectMillis;
 bool statusAirFirebase;
 bool statusAir = false;
+int people;
 
 void setup() {
   Serial.begin(115200);
@@ -96,7 +97,7 @@ void setup() {
 void loop() {
   int schedule = digitalRead(schedulePin);
   /* ตรวจคน */
-  int people = digitalRead(peoplePin);
+  people = digitalRead(peoplePin);
   if (people == 1 && statusAir) {
     /* เมื่อไม่เจอคน */
     while (true) {
@@ -113,7 +114,7 @@ void loop() {
         break;
       }
       /* ตรวจคน */
-      int people = digitalRead(peoplePin);
+      people = digitalRead(peoplePin);
       if (people == 0) {
         peopleStatusPrevious = LOW;
         break;
@@ -136,7 +137,7 @@ void loop() {
       }
       int schedule = digitalRead(schedulePin);
       /* ตรวจคน */
-      int people = digitalRead(peoplePin);
+      people = digitalRead(peoplePin);
       if (people == 1 || schedule == HIGH) {
         peopleStatusPrevious = LOW;
         break;
@@ -168,6 +169,13 @@ void loop() {
             Serial.println(fbdo.errorReason().c_str());
           }
         }
+      } else {
+        Serial.println(fbdo.errorReason().c_str());
+      }
+
+      if (Firebase.RTDB.setBool(&fbdo, F("/Human/Detection"), !people)) {
+        Serial.print("Detection : ");
+        Serial.println(!people);
       } else {
         Serial.println(fbdo.errorReason().c_str());
       }
