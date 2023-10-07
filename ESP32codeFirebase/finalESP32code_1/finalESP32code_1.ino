@@ -9,6 +9,9 @@ const char* password = "ooooo123";
 #define FIREBASE_HOST "https://esp32-website-default-rtdb.asia-southeast1.firebasedatabase.app"
 #define FIREBASE_API_KEY "AIzaSyAZw4zsGLxItXGbpNqqf44teLAUv1EZE48"
 
+FirebaseAuth auth;
+FirebaseConfig config;
+
 // Replace with the path to your pin status data on Firebase
 #define FIREBASE_PIN_STATUS_PATH "/pin_status"
 
