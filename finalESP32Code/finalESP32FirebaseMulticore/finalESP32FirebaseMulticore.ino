@@ -40,9 +40,21 @@ bool statusAir = false;
 int people;
 
 TaskHandle_t Task1;
-TaskHandle_t Task2;
 
 void setup() {
+  pinMode(peoplePin, INPUT_PULLUP);
+  pinMode(schedulePin, INPUT_PULLUP);
+
+  xTaskCreatePinnedToCore(
+    Task1code, /* Function to implement the task */
+    "Task1",   /* Name of the task */
+    10000,     /* Stack size in words */
+    NULL,      /* Task input parameter */
+    1,         /* Priority of the task */
+    &Task1,    /* Task handle. */
+    0);        /* Core where the task should run */
+  delay(500);
+
   Serial.begin(115200);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to Wi-Fi");
@@ -92,35 +104,10 @@ void setup() {
       Serial.println(fbdo.errorReason().c_str());
     }
   }
-  pinMode(peoplePin, INPUT_PULLUP);
-  pinMode(schedulePin, INPUT_PULLUP);
-
-  //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
-  xTaskCreatePinnedToCore(
-    Task1code, /* Task function. */
-    "Task1",   /* name of task. */
-    10000,     /* Stack size of task */
-    NULL,      /* parameter of the task */
-    1,         /* priority of the task */
-    &Task1,    /* Task handle to keep track of created task */
-    1);        /* pin task to core 0 */
-  delay(500);
-
-  //create a task that will be executed in the Task2code() function, with priority 1 and executed on core 1
-  xTaskCreatePinnedToCore(
-    Task2code, /* Task function. */
-    "Task2",   /* name of task. */
-    10000,     /* Stack size of task */
-    NULL,      /* parameter of the task */
-    1,         /* priority of the task */
-    &Task2,    /* Task handle to keep track of created task */
-    0);        /* pin task to core 1 */
-  delay(500);
 }
 
-//Task1code: blinks an LED every 1000 ms
-void Task1code(void* pvParameters) {
-  for (;;) {
+void Task1code(void* parameter) {
+  while (true) {
     int schedule = digitalRead(schedulePin);
     /* ตรวจคน */
     people = digitalRead(peoplePin);
@@ -173,12 +160,12 @@ void Task1code(void* pvParameters) {
     if (statusAir && schedule == HIGH) {
       statusAir = false;
     }
+    delay(500);
   }
 }
 
-//Task2code: blinks an LED every 700 ms
-void Task2code(void* pvParameters) {
-  for (;;) {
+void loop() {
+  while (true) {
     if (WiFi.status() != WL_CONNECTED) {
       Serial.println("WiFi disconnected. Reconnecting...");
       WiFi.reconnect();
@@ -212,8 +199,6 @@ void Task2code(void* pvParameters) {
         }
       }
     }
+    delay(500);
   }
-}
-
-void loop() {
 }
