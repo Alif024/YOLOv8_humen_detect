@@ -72,6 +72,8 @@ IRRawDataType sDecodedRawClose[RAW_DATA_ARRAY_SIZE] = { 0x7000000520C };        
 DistanceWidthTimingInfoStruct sDistanceWidthTimingInfo = { 9050, 4550, 600, 1650, 600, 500 };  // NEC timing
 uint8_t sNumberOfBits = 44;
 
+unsigned long repeatSendIR;
+
 void setup() {
   Serial.begin(115200);
 #if defined(__AVR_ATmega32U4__) || defined(SERIAL_PORT_USBVIRTUAL) || defined(SERIAL_USB) /*stm32duino*/ || defined(USBCON) /*STM32_stm32*/ || defined(SERIALUSB_PID) || defined(ARDUINO_attiny3217)
@@ -153,36 +155,42 @@ void loop() {
       }
     }
 
-    if (statusAir && statusAirFirebase != statusAir) {
+    if (!statusAir && statusAirFirebase != statusAir) {
       statusAir = statusAirFirebase;
-      Serial.println();
-      Serial.flush();  // To avoid disturbing the software PWM generation by serial output interrupts
+      repeatSendIR = millis();
+      while (millis() - repeatSendIR < 1000) {
+        Serial.println();
+        Serial.flush();  // To avoid disturbing the software PWM generation by serial output interrupts
 
-      IrSender.sendPulseDistanceWidthFromArray(38, &sDistanceWidthTimingInfo, &sDecodedRawOpen[0], sNumberOfBits,
+        IrSender.sendPulseDistanceWidthFromArray(38, &sDistanceWidthTimingInfo, &sDecodedRawOpen[0], sNumberOfBits,
 #if defined(USE_MSB_DECODING_FOR_DISTANCE_DECODER)
-                                               PROTOCOL_IS_MSB_FIRST
+                                                 PROTOCOL_IS_MSB_FIRST
 #else
-                                               PROTOCOL_IS_LSB_FIRST
+                                                 PROTOCOL_IS_LSB_FIRST
 #endif
-                                               ,
-                                               100, 0);
+                                                 ,
+                                                 100, 0);
 
-      delay(DELAY_BETWEEN_REPEATS_MILLIS);  // Wait a bit between retransmissions
-    } else if (!statusAir && statusAirFirebase != statusAir) {
+        delay(DELAY_BETWEEN_REPEATS_MILLIS);  // Wait a bit between retransmissions
+      }
+    } else if (statusAir && statusAirFirebase != statusAir) {
       statusAir = statusAirFirebase;
-      Serial.println();
-      Serial.flush();  // To avoid disturbing the software PWM generation by serial output interrupts
+      repeatSendIR = millis();
+      while (millis() - repeatSendIR < 1000) {
+        Serial.println();
+        Serial.flush();  // To avoid disturbing the software PWM generation by serial output interrupts
 
-      IrSender.sendPulseDistanceWidthFromArray(38, &sDistanceWidthTimingInfo, &sDecodedRawClose[0], sNumberOfBits,
+        IrSender.sendPulseDistanceWidthFromArray(38, &sDistanceWidthTimingInfo, &sDecodedRawClose[0], sNumberOfBits,
 #if defined(USE_MSB_DECODING_FOR_DISTANCE_DECODER)
-                                               PROTOCOL_IS_MSB_FIRST
+                                                 PROTOCOL_IS_MSB_FIRST
 #else
-                                               PROTOCOL_IS_LSB_FIRST
+                                                 PROTOCOL_IS_LSB_FIRST
 #endif
-                                               ,
-                                               100, 0);
+                                                 ,
+                                                 100, 0);
 
-      delay(DELAY_BETWEEN_REPEATS_MILLIS);  // Wait a bit between retransmissions
+        delay(DELAY_BETWEEN_REPEATS_MILLIS);  // Wait a bit between retransmissions
+      }
     }
   }
   delay(100);
