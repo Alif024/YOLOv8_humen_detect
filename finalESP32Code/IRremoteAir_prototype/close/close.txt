@@ -1,0 +1,43 @@
+Protocol=PulseDistance Raw-Data=0x7000000520C 44 bits LSB first
+Send with: IrSender.sendPulseDistanceWidth(38, 9150, 4450, 650, 1600, 650, 500, 0x7000000520C, 44, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+Store new timing info data=9150, 4450, 650, 1600, 650, 500
+
+Protocol=UNKNOWN 1 bits (incl. gap and start) received
+Protocol=PulseDistance Raw-Data=0x7000000520C 44 bits LSB first
+Send with: IrSender.sendPulseDistanceWidth(38, 9050, 4550, 600, 1650, 600, 500, 0x7000000520C, 44, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+Store new timing info data=9050, 4550, 600, 1650, 600, 500
+
+Protocol=PulseDistance Raw-Data=0x7000000520C 44 bits LSB first
+Send with: IrSender.sendPulseDistanceWidth(38, 9150, 4400, 650, 1600, 650, 500, 0x7000000520C, 44, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+Store new timing info data=9150, 4400, 650, 1600, 650, 500
+
+Protocol=PulseDistance Raw-Data=0x7000000520C 44 bits LSB first
+Send with: IrSender.sendPulseDistanceWidth(38, 9000, 4550, 600, 1700, 600, 550, 0x7000000520C, 44, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+Store new timing info data=9000, 4550, 600, 1700, 600, 550
+
+Protocol=PulseDistance Raw-Data=0x7000000520C 44 bits LSB first
+Send with: IrSender.sendPulseDistanceWidth(38, 9150, 4400, 650, 1650, 650, 500, 0x7000000520C, 44, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+Store new timing info data=9150, 4400, 650, 1650, 650, 500
+
+Send with: IrSender.sendPulseDistanceWidth(38, 9050, 4550, 600, 1650, 600, 500, 0x7000000520C, 44, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+Store new timing info data=9050, 4550, 600, 1650, 600, 500
+
+Protocol=PulseDistance Raw-Data=0x7000000520C 44 bits LSB first
+Send with: IrSender.sendPulseDistanceWidth(38, 9150, 4400, 600, 1700, 600, 550, 0x7000000520C, 44, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+Store new timing info data=9150, 4400, 600, 1700, 600, 550
+
+Protocol=PulseDistance Raw-Data=0x7000000520C 44 bits LSB first
+Send with: IrSender.sendPulseDistanceWidth(38, 9000, 4550, 600, 1700, 600, 550, 0x7000000520C, 44, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+Store new timing info data=9000, 4550, 600, 1700, 600, 550
+
+Protocol=PulseDistance Raw-Data=0x7000000520C 44 bits LSB first
+Send with: IrSender.sendPulseDistanceWidth(38, 9100, 4450, 650, 1600, 650, 500, 0x7000000520C, 44, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+Store new timing info data=9100, 4450, 650, 1600, 650, 500
+
+Protocol=PulseDistance Raw-Data=0x7000000520C 44 bits LSB first
+Send with: IrSender.sendPulseDistanceWidth(38, 9000, 4550, 550, 1700, 550, 600, 0x7000000520C, 44, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+Store new timing info data=9000, 4550, 550, 1700, 550, 600
+
+Protocol=PulseDistance Raw-Data=0x7000000520C 44 bits LSB first
+Send with: IrSender.sendPulseDistanceWidth(38, 9050, 4550, 550, 1700, 550, 600, 0x7000000520C, 44, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+Store new timing info data=9050, 4550, 550, 1700, 550, 600
