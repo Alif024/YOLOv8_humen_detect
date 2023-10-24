@@ -43,7 +43,6 @@ void setup() {
   Serial.begin(115200);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to Wi-Fi");
-  unsigned long ms = millis();
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(300);
@@ -94,60 +93,7 @@ void setup() {
   pinMode(schedulePin, INPUT_PULLUP);
 }
 
-void loop() {
-  int schedule = digitalRead(schedulePin);
-  /* ตรวจคน */
-  people = digitalRead(peoplePin);
-  if (people == 1 && statusAir) {
-    /* เมื่อไม่เจอคน */
-    while (true) {
-      /* คนไม่อยู่นานตามเวลาไหม */
-      detectMillis = millis();
-      if (peopleStatusPrevious == LOW) {
-        longDetectMillis = detectMillis;
-        peopleStatusPrevious = HIGH;
-      }
-      detectDurations = detectMillis - longDetectMillis;
-      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 3 * 60 * 1000) {
-        statusAir = false;
-        peopleStatusPrevious = LOW;
-        break;
-      }
-      /* ตรวจคน */
-      people = digitalRead(peoplePin);
-      if (people == 0) {
-        peopleStatusPrevious = LOW;
-        break;
-      }
-    }
-  } else if (people == 0 && !statusAir && schedule == LOW) {
-    /* เมื่อเจอคน */
-    while (true) {
-      /* คนอยู่นานตามเวลาไหม */
-      detectMillis = millis();
-      if (peopleStatusPrevious == LOW) {
-        longDetectMillis = detectMillis;
-        peopleStatusPrevious = HIGH;
-      }
-      detectDurations = detectMillis - longDetectMillis;
-      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 60 * 1000) {
-        statusAir = true;
-        peopleStatusPrevious = LOW;
-        break;
-      }
-      int schedule = digitalRead(schedulePin);
-      /* ตรวจคน */
-      people = digitalRead(peoplePin);
-      if (people == 1 || schedule == HIGH) {
-        peopleStatusPrevious = LOW;
-        break;
-      }
-    }
-  }
-  if (statusAir && schedule == HIGH) {
-    statusAir = false;
-  }
-
+void UpdateData() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi disconnected. Reconnecting...");
     WiFi.reconnect();
@@ -181,4 +127,62 @@ void loop() {
       }
     }
   }
+}
+
+void loop() {
+  int schedule = digitalRead(schedulePin);
+  /* ตรวจคน */
+  people = digitalRead(peoplePin);
+  if (people == 1 && statusAir) {
+    /* เมื่อไม่เจอคน */
+    while (true) {
+      /* คนไม่อยู่นานตามเวลาไหม */
+      detectMillis = millis();
+      if (peopleStatusPrevious == LOW) {
+        longDetectMillis = detectMillis;
+        peopleStatusPrevious = HIGH;
+      }
+      detectDurations = detectMillis - longDetectMillis;
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 3 * 60 * 1000) {
+        statusAir = false;
+        peopleStatusPrevious = LOW;
+        break;
+      }
+      /* ตรวจคน */
+      people = digitalRead(peoplePin);
+      if (people == 0) {
+        peopleStatusPrevious = LOW;
+        break;
+      }
+      UpdateData();
+    }
+  } else if (people == 0 && !statusAir && schedule == LOW) {
+    /* เมื่อเจอคน */
+    while (true) {
+      /* คนอยู่นานตามเวลาไหม */
+      detectMillis = millis();
+      if (peopleStatusPrevious == LOW) {
+        longDetectMillis = detectMillis;
+        peopleStatusPrevious = HIGH;
+      }
+      detectDurations = detectMillis - longDetectMillis;
+      if (people == 0 && peopleStatusPrevious == HIGH && detectDurations >= 60 * 1000) {
+        statusAir = true;
+        peopleStatusPrevious = LOW;
+        break;
+      }
+      int schedule = digitalRead(schedulePin);
+      /* ตรวจคน */
+      people = digitalRead(peoplePin);
+      if (people == 1 || schedule == HIGH) {
+        peopleStatusPrevious = LOW;
+        break;
+      }
+      UpdateData();
+    }
+  }
+  if (statusAir && schedule == HIGH) {
+    statusAir = false;
+  }
+  UpdateData();
 }
