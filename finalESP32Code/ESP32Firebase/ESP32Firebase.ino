@@ -143,7 +143,7 @@ void loop() {
         peopleStatusPrevious = HIGH;
       }
       detectDurations = detectMillis - longDetectMillis;
-      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 3 * 60 * 1000) {
+      if (people == 1 && peopleStatusPrevious == HIGH && detectDurations >= 60 * 1000) {
         statusAir = false;
         peopleStatusPrevious = LOW;
         break;
